@@ -1,0 +1,128 @@
+# ============================================================================
+# AI Medical Diagnosis System - Example Configuration
+# ============================================================================
+# This is an example terraform.tfvars file.
+# Copy this file to terraform.tfvars and customize the values.
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with your values
+#   terraform apply
+# ============================================================================
+
+# ============================================================================
+# BASIC CONFIGURATION
+# ============================================================================
+
+# AWS region where resources will be deployed
+aws_region = "us-east-1"
+
+# Name of the Lambda function
+function_name = "ai-medical-diagnosis"
+
+# Environment (dev, staging, prod)
+environment = "dev"
+
+# ============================================================================
+# LAMBDA CONFIGURATION
+# ============================================================================
+
+# Python runtime version
+python_runtime = "python3.11"
+
+# Memory allocation in MB (128-10240)
+memory_size = 512
+
+# Timeout in seconds (1-900)
+timeout = 30
+
+# ============================================================================
+# IAM CONFIGURATION
+# ============================================================================
+
+# IAM role name
+lambda_role_name = "ai-medical-diagnosis-role"
+
+# ============================================================================
+# LOGGING CONFIGURATION
+# ============================================================================
+
+# CloudWatch log retention in days
+# Valid values: 0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653
+log_retention_days = 7
+
+# Application log level
+log_level = "INFO"
+
+# ============================================================================
+# MONITORING
+# ============================================================================
+
+# Enable CloudWatch alarms
+enable_alarms = false
+
+# ============================================================================
+# ENVIRONMENT VARIABLES (Optional)
+# ============================================================================
+
+# Add custom environment variables for Lambda function
+# Uncomment and add your variables
+# environment_variables = {
+#   ENVIRONMENT = "development"
+#   LOG_LEVEL   = "INFO"
+#   API_KEY     = "your-api-key-here"
+# }
+
+# ============================================================================
+# CORS CONFIGURATION
+# ============================================================================
+
+# Allowed origins for CORS (use specific domains in production)
+cors_allowed_origins = ["*"]
+
+# Allowed HTTP methods
+cors_allowed_methods = ["GET", "POST", "OPTIONS"]
+
+# Allowed headers
+cors_allowed_headers = ["content-type", "x-amz-date", "authorization", "x-api-key"]
+
+# CORS max age in seconds
+cors_max_age = 86400
+
+# ============================================================================
+# TAGGING
+# ============================================================================
+
+# Common tags for all resources
+common_tags = {
+  Project     = "AI-Medical-Diagnosis"
+  ManagedBy   = "Terraform"
+  Environment = "Development"
+  Owner       = "Healthcare-AI-Team"
+  CostCenter  = "Research"
+  CreatedBy   = "your-name"
+}
+
+# ============================================================================
+# COST OPTIMIZATION (Optional)
+# ============================================================================
+
+# Reserved concurrent executions (-1 = unreserved)
+# Set a positive number to prevent runaway costs
+# reserved_concurrent_executions = 10
+
+# Enable AWS X-Ray tracing
+enable_xray_tracing = false
+
+# ============================================================================
+# VPC CONFIGURATION (Optional - for private deployment)
+# ============================================================================
+
+# Enable VPC configuration
+# enable_vpc = false
+
+# VPC subnet IDs (required if enable_vpc = true)
+# subnet_ids = ["subnet-12345678", "subnet-87654321"]
+
+# VPC security group IDs (required if enable_vpc = true)
+# security_group_ids = ["sg-12345678"]
