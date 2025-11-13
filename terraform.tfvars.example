@@ -1,0 +1,21 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Lambda Configuration
+function_name = "gen-ai-dashboard"
+runtime       = "python3.11"
+timeout       = 30
+memory_size   = 256
+
+# OpenWeatherMap API Key (Get yours from https://openweathermap.org/api)
+openweather_api_key = "YOUR_API_KEY_HERE"
+
+# CloudWatch Logs
+log_retention_days = 7
+
+# Tags
+tags = {
+  Project     = "Gen-AI-Dashboard"
+  Environment = "Development"
+  ManagedBy   = "Terraform"
+}
