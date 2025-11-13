@@ -1,0 +1,68 @@
+# ============================================================================
+# AWS Configuration
+# ============================================================================
+
+# AWS region where resources will be created
+aws_region = "us-east-1"
+
+# Project name (used for resource naming)
+project_name = "medical-diagnosis"
+
+# Environment (dev, staging, or prod)
+environment = "dev"
+
+# ============================================================================
+# Lambda Configuration
+# ============================================================================
+
+# Python runtime version
+lambda_runtime = "python3.11"
+
+# Lambda timeout in seconds (3-900)
+lambda_timeout = 30
+
+# Lambda memory in MB (128-10240)
+lambda_memory_size = 256
+
+# ============================================================================
+# CloudWatch Configuration
+# ============================================================================
+
+# Number of days to retain logs (1, 3, 5, 7, 14, 30, 60, 90, etc.)
+log_retention_days = 7
+
+# Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+log_level = "INFO"
+
+# ============================================================================
+# Security & Access
+# ============================================================================
+
+# Enable public access (true) or require IAM authentication (false)
+enable_public_access = true
+
+# CORS allowed origins (use ["*"] for all origins, or specify specific domains)
+cors_allow_origins = ["*"]
+
+# ============================================================================
+# Monitoring & Alarms
+# ============================================================================
+
+# Enable CloudWatch alarms
+enable_alarms = false
+
+# Error threshold for alarm (number of errors)
+error_threshold = 5
+
+# Duration threshold for alarm (milliseconds)
+duration_threshold = 25000
+
+# ============================================================================
+# Additional Tags
+# ============================================================================
+
+additional_tags = {
+  Owner       = "DevOps Team"
+  CostCenter  = "Engineering"
+  Application = "Medical-AI"
+}
