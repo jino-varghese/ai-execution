@@ -1,0 +1,2 @@
+# Python dependencies for AI Medical Diagnosis System
+# No external dependencies needed - uses only Python standard library
