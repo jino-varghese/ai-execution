@@ -131,8 +131,10 @@ def lambda_handler(event, context):
     }
 
     try:
+        # Log the incoming event for debugging
         http_method = event.get('httpMethod', 'GET')
         path = event.get('path', '/')
+        print(f"Request: {http_method} {path}")
 
         # Handle OPTIONS for CORS preflight
         if http_method == 'OPTIONS':
@@ -1001,11 +1003,35 @@ All inventions and works created during employment belong to Employer.`
                     })
                 });
 
+                // Check if response is OK
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+
+                // Check Content-Type before parsing
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const textResponse = await response.text();
+                    console.error('Non-JSON response received:', textResponse.substring(0, 500));
+                    throw new Error('Server returned HTML instead of JSON. This usually means:\n\n' +
+                        '1. The Lambda function encountered an error\n' +
+                        '2. The function timed out (increase timeout in AWS)\n' +
+                        '3. AWS Bedrock access is not enabled\n\n' +
+                        'Check CloudWatch Logs for details, or try a shorter document.');
+                }
+
                 const data = await response.json();
+
+                // Check if response contains an error
+                if (data.error) {
+                    throw new Error(data.error + (data.details ? '\n\nDetails: ' + data.details : ''));
+                }
+
                 displayResults(data);
 
             } catch (error) {
-                alert('Error analyzing document: ' + error.message);
+                console.error('Full error:', error);
+                alert('Error analyzing document:\n\n' + error.message);
             } finally {
                 document.getElementById('loading').classList.remove('active');
             }
