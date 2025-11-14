@@ -88,6 +88,19 @@ An AI-powered legal document analysis system that assists lawyers and legal prof
 ### Automated Deployment (Recommended)
 
 ```bash
+#Terraform Execution
+cd terraform
+./terraform-deploy.sh --auto-approve
+
+#or 
+
+./terraform.sh
+
+#To Clen up resource
+./terrafrom-destroy.sh --auto-approve
+
+
+#Shell Execution 
 # Ensure deploy.sh is executable
 chmod +x deploy.sh
 
