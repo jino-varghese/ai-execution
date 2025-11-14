@@ -1,0 +1,38 @@
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "dev"
+
+# Lambda Function Configuration
+lambda_function_name = "legal-document-analyzer"
+lambda_role_name     = "legal-document-analyzer-role"
+lambda_runtime       = "python3.11"
+lambda_timeout       = 60
+lambda_memory_size   = 512
+lambda_architecture  = "x86_64"
+
+# Environment Variables (optional)
+# lambda_environment_variables = {
+#   LOG_LEVEL = "INFO"
+# }
+
+# Function URL Configuration
+function_url_auth_type = "NONE"  # Change to "AWS_IAM" for authenticated access
+
+# CORS Configuration
+cors_allow_origins = ["*"]
+cors_allow_methods = ["GET", "POST", "OPTIONS"]
+cors_allow_headers = ["content-type", "x-amz-date", "authorization", "x-api-key"]
+cors_max_age       = 86400
+
+# CloudWatch Configuration
+log_retention_days       = 7
+enable_cloudwatch_alarms = false
+error_threshold          = 5
+duration_threshold       = 50000  # milliseconds
+
+# Additional Tags
+additional_tags = {
+  Owner       = "Legal Team"
+  CostCenter  = "Legal-Tech"
+  Application = "Document Analyzer"
+}
