@@ -132,8 +132,9 @@ def lambda_handler(event, context):
 
     try:
         # Log the incoming event for debugging
-        http_method = event.get('httpMethod', 'GET')
-        path = event.get('path', '/')
+        # Support both API Gateway (httpMethod) and Lambda Function URL (requestContext.http.method) formats
+        http_method = event.get('httpMethod') or event.get('requestContext', {}).get('http', {}).get('method', 'GET')
+        path = event.get('path') or event.get('rawPath', '/')
         print(f"Request: {http_method} {path}")
 
         # Handle OPTIONS for CORS preflight
