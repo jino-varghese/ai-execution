@@ -1,542 +1,988 @@
 import json
 import boto3
-from datetime import datetime
-import urllib3
+import base64
+import io
 import os
+from datetime import datetime
+from typing import Dict, List, Any, Tuple
+import re
 
-# Initialize HTTP client for API calls
-http = urllib3.PoolManager()
+# Initialize AWS clients
+bedrock_runtime = boto3.client('bedrock-runtime', region_name='us-east-1')
+s3_client = boto3.client('s3')
 
-# Define available cities with their coordinates
-CITIES = {
-    'houston': {'name': 'Houston, Texas', 'lat': 29.7604, 'lon': -95.3698},
-    'newyork': {'name': 'New York, NY', 'lat': 40.7128, 'lon': -74.0060},
-    'losangeles': {'name': 'Los Angeles, CA', 'lat': 34.0522, 'lon': -118.2437},
-    'chicago': {'name': 'Chicago, IL', 'lat': 41.8781, 'lon': -87.6298},
-    'miami': {'name': 'Miami, FL', 'lat': 25.7617, 'lon': -80.1918},
-    'seattle': {'name': 'Seattle, WA', 'lat': 47.6062, 'lon': -122.3321},
-    'boston': {'name': 'Boston, MA', 'lat': 42.3601, 'lon': -71.0589},
-    'sanfrancisco': {'name': 'San Francisco, CA', 'lat': 37.7749, 'lon': -122.4194},
-    'austin': {'name': 'Austin, TX', 'lat': 30.2672, 'lon': -97.7431},
-    'denver': {'name': 'Denver, CO', 'lat': 39.7392, 'lon': -104.9903}
+# Legal risk categories and patterns
+RISK_CATEGORIES = {
+    'indemnification': [
+        r'indemnif(?:y|ication)',
+        r'hold\s+harmless',
+        r'defend\s+against',
+    ],
+    'limitation_of_liability': [
+        r'limitation\s+of\s+liability',
+        r'consequential\s+damages',
+        r'indirect\s+damages',
+        r'liability\s+cap',
+    ],
+    'termination': [
+        r'termination',
+        r'cancellation',
+        r'notice\s+period',
+        r'cure\s+period',
+    ],
+    'confidentiality': [
+        r'confidential(?:ity)?',
+        r'proprietary\s+information',
+        r'non-disclosure',
+        r'NDA',
+    ],
+    'intellectual_property': [
+        r'intellectual\s+property',
+        r'IP\s+rights',
+        r'copyright',
+        r'patent',
+        r'trademark',
+    ],
+    'payment_terms': [
+        r'payment\s+terms',
+        r'invoice',
+        r'late\s+fee',
+        r'interest\s+rate',
+    ],
+    'governing_law': [
+        r'governing\s+law',
+        r'jurisdiction',
+        r'venue',
+        r'dispute\s+resolution',
+    ],
+    'warranties': [
+        r'warrant(?:y|ies)',
+        r'representation',
+        r'guarantee',
+    ],
+    'force_majeure': [
+        r'force\s+majeure',
+        r'act\s+of\s+god',
+        r'extraordinary\s+event',
+    ],
 }
+
+# Critical missing clauses
+CRITICAL_CLAUSES = [
+    'limitation of liability',
+    'indemnification',
+    'termination',
+    'confidentiality',
+    'governing law',
+    'dispute resolution',
+]
+
+# Legal precedents database (simplified for demo)
+LEGAL_PRECEDENTS = {
+    'indemnification': {
+        'description': 'Indemnification clauses protect parties from liability',
+        'best_practice': 'Should be mutual and limited in scope',
+        'risk_level': 'HIGH',
+        'precedent': 'One-sided indemnification clauses may be unenforceable in certain jurisdictions'
+    },
+    'limitation_of_liability': {
+        'description': 'Limits the financial exposure of parties',
+        'best_practice': 'Should include carve-outs for gross negligence and willful misconduct',
+        'risk_level': 'HIGH',
+        'precedent': 'Courts may invalidate liability caps that are unreasonably low'
+    },
+    'termination': {
+        'description': 'Defines how and when the contract can be ended',
+        'best_practice': 'Should include notice periods and cure provisions',
+        'risk_level': 'MEDIUM',
+        'precedent': 'Termination for convenience should be available to both parties'
+    },
+}
+
 
 def lambda_handler(event, context):
     """
-    Main Lambda handler function that serves a web UI with weather info and service selection
-    
-    This function:
-    1. Displays current time and weather for selected city
-    2. Provides city dropdown for location selection
-    3. Provides service selection options for Gen AI services
-    4. Handles GET (display UI), POST (process selections), and weather API requests
+    Main Lambda handler for Legal Document Analysis
+
+    Endpoints:
+    - GET / : Returns the web UI
+    - POST /analyze : Analyzes uploaded legal document
+    - POST /risk-assessment : Performs detailed risk assessment
     """
-    
-    # Get the HTTP method from the event
-    http_method = event.get('httpMethod', 'GET')
-    
-    if http_method == 'GET':
-        # Check if this is a weather API request
-        query_params = event.get('queryStringParameters') or {}
-        if 'city' in query_params:
-            # Return weather data for the requested city
-            city_key = query_params.get('city', 'houston')
-            weather = get_weather_data(city_key)
+
+    try:
+        http_method = event.get('httpMethod', 'GET')
+        path = event.get('path', '/')
+
+        if http_method == 'GET':
             return {
                 'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                'body': json.dumps(weather)
-            }
-        else:
-            # Serve the main web UI
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'text/html',
-                },
-                'body': get_html_page()
-            }
-    
-    elif http_method == 'POST':
-        # Handle service selection
-        try:
-            body = json.loads(event.get('body', '{}'))
-            selected_service = body.get('service', 'none')
-            
-            return {
-                'statusCode': 200,
-                'headers': {
-                    'Content-Type': 'application/json',
-                },
-                'body': json.dumps({
-                    'message': f'Selected service: {selected_service}',
-                    'service': selected_service,
-                    'timestamp': datetime.now().isoformat()
-                })
-            }
-        except Exception as e:
-            return {
-                'statusCode': 400,
-                'body': json.dumps({'error': str(e)})
+                'headers': {'Content-Type': 'text/html'},
+                'body': get_html_ui()
             }
 
-def get_weather_data(city_key='houston'):
+        elif http_method == 'POST':
+            body = json.loads(event.get('body', '{}'))
+
+            if 'document' in body:
+                # Analyze document
+                result = analyze_document(body)
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(result)
+                }
+            elif 'text' in body:
+                # Quick risk assessment
+                result = quick_risk_assessment(body['text'])
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'body': json.dumps(result)
+                }
+            else:
+                return {
+                    'statusCode': 400,
+                    'body': json.dumps({'error': 'No document or text provided'})
+                }
+
+        else:
+            return {
+                'statusCode': 405,
+                'body': json.dumps({'error': 'Method not allowed'})
+            }
+
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({'error': str(e)})
+        }
+
+
+def analyze_document(data: Dict) -> Dict[str, Any]:
     """
-    Fetch weather data for specified city
-    Uses OpenWeatherMap API (you'll need to add your API key)
-    
-    Args:
-        city_key: Key from CITIES dictionary (default: 'houston')
+    Comprehensive document analysis using LLM and RAG
+    """
+    document_text = data.get('document', '')
+    document_type = data.get('type', 'contract')
+
+    # Extract key clauses
+    clauses = extract_clauses(document_text)
+
+    # Identify risks
+    risks = identify_risks(document_text)
+
+    # Check for missing critical clauses
+    missing_clauses = check_missing_clauses(document_text)
+
+    # Get LLM analysis
+    llm_analysis = get_llm_analysis(document_text, document_type)
+
+    # RAG-based precedent matching
+    relevant_precedents = get_relevant_precedents(clauses, risks)
+
+    # Overall risk score
+    risk_score = calculate_risk_score(risks, missing_clauses)
+
+    return {
+        'analysis_id': f"analysis_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        'timestamp': datetime.now().isoformat(),
+        'document_type': document_type,
+        'risk_score': risk_score,
+        'risk_level': get_risk_level(risk_score),
+        'identified_clauses': clauses,
+        'identified_risks': risks,
+        'missing_critical_clauses': missing_clauses,
+        'llm_analysis': llm_analysis,
+        'relevant_precedents': relevant_precedents,
+        'recommendations': generate_recommendations(risks, missing_clauses),
+    }
+
+
+def quick_risk_assessment(text: str) -> Dict[str, Any]:
+    """
+    Quick risk assessment for shorter text snippets
+    """
+    risks = identify_risks(text)
+    missing = check_missing_clauses(text)
+    risk_score = calculate_risk_score(risks, missing)
+
+    return {
+        'risk_score': risk_score,
+        'risk_level': get_risk_level(risk_score),
+        'identified_risks': risks,
+        'missing_clauses': missing,
+    }
+
+
+def extract_clauses(text: str) -> List[Dict[str, str]]:
+    """
+    Extract legal clauses from document using pattern matching
+    """
+    clauses = []
+
+    for category, patterns in RISK_CATEGORIES.items():
+        for pattern in patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            for match in matches:
+                # Get context around match (150 chars before and after)
+                start = max(0, match.start() - 150)
+                end = min(len(text), match.end() + 150)
+                context = text[start:end].strip()
+
+                clauses.append({
+                    'category': category,
+                    'matched_text': match.group(),
+                    'context': context,
+                    'position': match.start()
+                })
+                break  # Only take first match per category
+
+    return clauses
+
+
+def identify_risks(text: str) -> List[Dict[str, Any]]:
+    """
+    Identify potential legal risks in the document
+    """
+    risks = []
+
+    # Check for one-sided indemnification
+    if re.search(r'shall\s+indemnify', text, re.IGNORECASE):
+        if not re.search(r'mutual(?:ly)?\s+indemnif', text, re.IGNORECASE):
+            risks.append({
+                'type': 'one_sided_indemnification',
+                'severity': 'HIGH',
+                'description': 'Document contains one-sided indemnification clause',
+                'recommendation': 'Negotiate for mutual indemnification'
+            })
+
+    # Check for unlimited liability
+    if not re.search(r'limitation\s+of\s+liability', text, re.IGNORECASE):
+        risks.append({
+            'type': 'unlimited_liability',
+            'severity': 'HIGH',
+            'description': 'No limitation of liability clause found',
+            'recommendation': 'Add liability cap to limit exposure'
+        })
+
+    # Check for automatic renewal
+    if re.search(r'automatic(?:ally)?\s+renew', text, re.IGNORECASE):
+        if not re.search(r'opt[- ]out|notice\s+of\s+non[- ]renewal', text, re.IGNORECASE):
+            risks.append({
+                'type': 'automatic_renewal',
+                'severity': 'MEDIUM',
+                'description': 'Automatic renewal without clear opt-out provisions',
+                'recommendation': 'Ensure clear notice requirements for non-renewal'
+            })
+
+    # Check for broad confidentiality
+    if re.search(r'all\s+information.*confidential', text, re.IGNORECASE):
+        risks.append({
+            'type': 'overly_broad_confidentiality',
+            'severity': 'MEDIUM',
+            'description': 'Overly broad confidentiality obligations',
+            'recommendation': 'Define specific categories of confidential information'
+        })
+
+    # Check for IP assignment
+    if re.search(r'assign|transfer.*intellectual\s+property|IP', text, re.IGNORECASE):
+        risks.append({
+            'type': 'ip_assignment',
+            'severity': 'HIGH',
+            'description': 'Intellectual property assignment clause detected',
+            'recommendation': 'Review IP ownership and assignment terms carefully'
+        })
+
+    # Check for non-compete clauses
+    if re.search(r'non[- ]compete|covenant\s+not\s+to\s+compete', text, re.IGNORECASE):
+        risks.append({
+            'type': 'non_compete',
+            'severity': 'MEDIUM',
+            'description': 'Non-compete clause found',
+            'recommendation': 'Verify enforceability in relevant jurisdiction'
+        })
+
+    return risks
+
+
+def check_missing_clauses(text: str) -> List[str]:
+    """
+    Check for missing critical clauses
+    """
+    missing = []
+
+    for clause in CRITICAL_CLAUSES:
+        pattern = clause.replace(' ', r'\s+')
+        if not re.search(pattern, text, re.IGNORECASE):
+            missing.append(clause)
+
+    return missing
+
+
+def get_llm_analysis(text: str, doc_type: str) -> Dict[str, str]:
+    """
+    Use AWS Bedrock (Claude) for detailed legal analysis
     """
     try:
-        # You'll need to set this as an environment variable in Lambda
-        api_key = os.environ.get('OPENWEATHER_API_KEY', 'YOUR_API_KEY_HERE')
-        
-        # Get city coordinates
-        city = CITIES.get(city_key, CITIES['houston'])
-        lat = city['lat']
-        lon = city['lon']
-        
-        url = f'https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=imperial'
-        
-        response = http.request('GET', url)
-        weather_data = json.loads(response.data.decode('utf-8'))
-        
-        return {
-            'city': city['name'],
-            'temperature': weather_data['main']['temp'],
-            'description': weather_data['weather'][0]['description'],
-            'humidity': weather_data['main']['humidity'],
-            'feels_like': weather_data['main']['feels_like']
-        }
-    except Exception as e:
-        # Return default data if API call fails
-        return {
-            'city': CITIES.get(city_key, CITIES['houston'])['name'],
-            'temperature': 'N/A',
-            'description': 'Unable to fetch weather',
-            'humidity': 'N/A',
-            'feels_like': 'N/A',
-            'error': str(e)
+        # Truncate text if too long (Claude has token limits)
+        max_chars = 8000
+        truncated_text = text[:max_chars] if len(text) > max_chars else text
+
+        prompt = f"""You are an expert legal analyst reviewing a {doc_type}.
+
+Please analyze the following document and provide:
+
+1. **Summary**: Brief overview of the document's purpose
+2. **Key Terms**: Main obligations and rights of each party
+3. **Potential Issues**: Any problematic clauses or missing protections
+4. **Overall Assessment**: Your professional opinion on the fairness and completeness
+
+Document:
+{truncated_text}
+
+Provide a structured analysis in clear, professional language."""
+
+        # Call AWS Bedrock (Claude)
+        request_body = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 2000,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            "temperature": 0.3,
         }
 
-def get_html_page():
+        response = bedrock_runtime.invoke_model(
+            modelId='anthropic.claude-3-sonnet-20240229-v1:0',
+            body=json.dumps(request_body)
+        )
+
+        response_body = json.loads(response['body'].read())
+        analysis = response_body['content'][0]['text']
+
+        return {
+            'summary': analysis,
+            'model': 'claude-3-sonnet',
+            'confidence': 'high'
+        }
+
+    except Exception as e:
+        # Fallback analysis if Bedrock is not available
+        return {
+            'summary': f'LLM analysis unavailable: {str(e)}. Using pattern-based analysis only.',
+            'model': 'fallback',
+            'confidence': 'low'
+        }
+
+
+def get_relevant_precedents(clauses: List[Dict], risks: List[Dict]) -> List[Dict]:
     """
-    Generate the HTML page with embedded CSS and JavaScript
+    RAG-based retrieval of relevant legal precedents
     """
-    
-    # Get current time and default weather (Houston)
-    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S %Z')
-    weather = get_weather_data('houston')
-    
-    html = f"""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>AWS Gen AI Dashboard - Multi-City Weather</title>
-        <style>
-            * {{
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }}
-            
-            body {{
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                padding: 20px;
-            }}
-            
-            .container {{
-                max-width: 900px;
-                margin: 0 auto;
-            }}
-            
-            .header {{
-                background: white;
-                border-radius: 15px;
-                padding: 30px;
-                margin-bottom: 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            }}
-            
-            h1 {{
-                color: #667eea;
-                margin-bottom: 10px;
-            }}
-            
-            .city-selector {{
-                margin: 20px 0;
-                display: flex;
-                align-items: center;
-                gap: 15px;
-            }}
-            
-            .city-selector label {{
-                font-weight: bold;
-                color: #667eea;
-                font-size: 16px;
-            }}
-            
-            .city-selector select {{
-                flex: 1;
-                padding: 12px 15px;
-                border: 2px solid #667eea;
-                border-radius: 10px;
-                font-size: 16px;
-                background: white;
-                color: #333;
-                cursor: pointer;
-                transition: all 0.3s;
-            }}
-            
-            .city-selector select:hover {{
-                border-color: #764ba2;
-                box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
-            }}
-            
-            .city-selector select:focus {{
-                outline: none;
-                border-color: #764ba2;
-                box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
-            }}
-            
-            .loading {{
-                display: none;
-                color: #667eea;
-                font-style: italic;
-            }}
-            
-            .loading.active {{
-                display: inline;
-            }}
-            
-            .info-grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin-top: 20px;
-            }}
-            
-            .info-card {{
-                background: #f8f9fa;
-                padding: 15px;
-                border-radius: 10px;
-                border-left: 4px solid #667eea;
-                transition: transform 0.3s;
-            }}
-            
-            .info-card:hover {{
-                transform: translateY(-3px);
-                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            }}
-            
-            .info-card h3 {{
-                color: #667eea;
-                font-size: 14px;
-                margin-bottom: 5px;
-            }}
-            
-            .info-card p {{
-                color: #333;
-                font-size: 18px;
-                font-weight: bold;
-            }}
-            
-            .services-section {{
-                background: white;
-                border-radius: 15px;
-                padding: 30px;
-                margin-bottom: 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            }}
-            
-            .services-section h2 {{
-                color: #667eea;
-                margin-bottom: 20px;
-            }}
-            
-            .service-grid {{
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 15px;
-            }}
-            
-            .service-card {{
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 20px;
-                border-radius: 10px;
-                cursor: pointer;
-                transition: transform 0.3s, box-shadow 0.3s;
-                border: 2px solid transparent;
-            }}
-            
-            .service-card:hover {{
-                transform: translateY(-5px);
-                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            }}
-            
-            .service-card.selected {{
-                border: 2px solid #ffd700;
-                box-shadow: 0 0 20px rgba(255,215,0,0.5);
-            }}
-            
-            .service-card h3 {{
-                margin-bottom: 10px;
-            }}
-            
-            .service-card p {{
-                font-size: 14px;
-                opacity: 0.9;
-            }}
-            
-            .action-button {{
-                background: #667eea;
-                color: white;
-                padding: 12px 30px;
-                border: none;
-                border-radius: 25px;
-                font-size: 16px;
-                cursor: pointer;
-                margin-top: 20px;
-                transition: background 0.3s;
-            }}
-            
-            .action-button:hover {{
-                background: #764ba2;
-            }}
-            
-            .response-area {{
-                background: #f8f9fa;
-                padding: 20px;
-                border-radius: 10px;
-                margin-top: 20px;
-                display: none;
-            }}
-            
-            .response-area.active {{
-                display: block;
-            }}
-            
-            .weather-icon {{
-                font-size: 40px;
-                margin-bottom: 10px;
-            }}
-            
-            .pulse {{
-                animation: pulse 1s ease-in-out;
-            }}
-            
-            @keyframes pulse {{
-                0% {{ transform: scale(1); }}
-                50% {{ transform: scale(1.05); }}
-                100% {{ transform: scale(1); }}
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <!-- Header Section with Time and Weather -->
-            <div class="header">
-                <h1>🚀 AWS Gen AI Dashboard</h1>
-                
-                <!-- City Selector Dropdown -->
-                <div class="city-selector">
-                    <label for="city-select">📍 Select City:</label>
-                    <select id="city-select" onchange="changeCity()">
-                        <option value="houston" selected>Houston, Texas</option>
-                        <option value="newyork">New York, NY</option>
-                        <option value="losangeles">Los Angeles, CA</option>
-                        <option value="chicago">Chicago, IL</option>
-                        <option value="miami">Miami, FL</option>
-                        <option value="seattle">Seattle, WA</option>
-                        <option value="boston">Boston, MA</option>
-                        <option value="sanfrancisco">San Francisco, CA</option>
-                        <option value="austin">Austin, TX</option>
-                        <option value="denver">Denver, CO</option>
-                    </select>
-                    <span class="loading" id="loading">Loading...</span>
+    precedents = []
+
+    # Simple precedent matching based on identified clauses and risks
+    clause_categories = {c['category'] for c in clauses}
+    risk_types = {r['type'] for r in risks}
+
+    for category in clause_categories:
+        if category in LEGAL_PRECEDENTS:
+            precedents.append({
+                'category': category,
+                'relevance': 'high',
+                **LEGAL_PRECEDENTS[category]
+            })
+
+    return precedents
+
+
+def calculate_risk_score(risks: List[Dict], missing_clauses: List[str]) -> int:
+    """
+    Calculate overall risk score (0-100)
+    """
+    score = 0
+
+    # Add points for each identified risk
+    for risk in risks:
+        if risk['severity'] == 'HIGH':
+            score += 25
+        elif risk['severity'] == 'MEDIUM':
+            score += 15
+        else:
+            score += 5
+
+    # Add points for missing critical clauses
+    score += len(missing_clauses) * 10
+
+    # Cap at 100
+    return min(score, 100)
+
+
+def get_risk_level(score: int) -> str:
+    """
+    Convert numeric score to risk level
+    """
+    if score >= 70:
+        return 'CRITICAL'
+    elif score >= 50:
+        return 'HIGH'
+    elif score >= 30:
+        return 'MEDIUM'
+    else:
+        return 'LOW'
+
+
+def generate_recommendations(risks: List[Dict], missing_clauses: List[str]) -> List[str]:
+    """
+    Generate actionable recommendations
+    """
+    recommendations = []
+
+    for risk in risks:
+        recommendations.append(f"⚠️ {risk['description']}: {risk['recommendation']}")
+
+    if missing_clauses:
+        recommendations.append(
+            f"📋 Add the following critical clauses: {', '.join(missing_clauses)}"
+        )
+
+    if not recommendations:
+        recommendations.append("✅ Document appears to have standard protections")
+
+    return recommendations
+
+
+def get_html_ui() -> str:
+    """
+    Generate web UI for the legal document analyzer
+    """
+    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Document Analysis Agent</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #1e3c72;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .main-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        h2 {
+            color: #1e3c72;
+            margin-bottom: 20px;
+        }
+
+        .input-area {
+            margin-bottom: 20px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 2px solid #1e3c72;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 10px rgba(30, 60, 114, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        button {
+            background: #1e3c72;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #2a5298;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .results.active {
+            display: block;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .risk-CRITICAL {
+            background: #dc3545;
+            color: white;
+        }
+
+        .risk-HIGH {
+            background: #fd7e14;
+            color: white;
+        }
+
+        .risk-MEDIUM {
+            background: #ffc107;
+            color: #000;
+        }
+
+        .risk-LOW {
+            background: #28a745;
+            color: white;
+        }
+
+        .risk-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #dc3545;
+        }
+
+        .risk-item.HIGH {
+            border-left-color: #fd7e14;
+        }
+
+        .risk-item.MEDIUM {
+            border-left-color: #ffc107;
+        }
+
+        .risk-item.LOW {
+            border-left-color: #28a745;
+        }
+
+        .clause-item {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 3px solid #1e3c72;
+        }
+
+        .missing-clause {
+            background: #fff3cd;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #ffc107;
+        }
+
+        .recommendation {
+            background: #d4edda;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 8px 0;
+            border-left: 3px solid #28a745;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #1e3c72;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #1e3c72;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .feature-card h3 {
+            color: white;
+            margin-bottom: 10px;
+        }
+
+        .sample-contracts {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .sample-btn {
+            background: #667eea;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sample-btn:hover {
+            background: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚖️ Legal Document Analysis Agent</h1>
+            <p class="subtitle">AI-Powered Contract Review & Risk Assessment</p>
+        </div>
+
+        <div class="main-section">
+            <h2>Document Analysis</h2>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>🤖 LLM Analysis</h3>
+                    <p>Powered by Claude AI for deep legal understanding</p>
                 </div>
-                
-                <p style="color: #666;" id="city-name">{weather['city']}</p>
-                
-                <div class="info-grid" id="weather-grid">
-                    <div class="info-card">
-                        <h3>🕐 Current Time</h3>
-                        <p id="current-time">{current_time}</p>
-                    </div>
-                    
-                    <div class="info-card">
-                        <h3>🌡️ Temperature</h3>
-                        <p id="temperature">{weather['temperature']}°F</p>
-                    </div>
-                    
-                    <div class="info-card">
-                        <h3>☁️ Conditions</h3>
-                        <p id="conditions">{weather['description'].title()}</p>
-                    </div>
-                    
-                    <div class="info-card">
-                        <h3>💧 Humidity</h3>
-                        <p id="humidity">{weather['humidity']}%</p>
-                    </div>
+                <div class="feature-card">
+                    <h3>📚 RAG System</h3>
+                    <p>Retrieves relevant legal precedents and case law</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⚠️ Risk Detection</h3>
+                    <p>Identifies potential legal risks and missing clauses</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💡 Recommendations</h3>
+                    <p>Actionable insights to improve contracts</p>
                 </div>
             </div>
-            
-            <!-- Services Section -->
-            <div class="services-section">
-                <h2>Select an AWS Gen AI Service</h2>
-                
-                <div class="service-grid">
-                    <div class="service-card" data-service="bedrock" onclick="selectService(this)">
-                        <h3>🤖 Amazon Bedrock</h3>
-                        <p>Build and scale Gen AI applications with foundation models</p>
-                    </div>
-                    
-                    <div class="service-card" data-service="sagemaker" onclick="selectService(this)">
-                        <h3>📊 SageMaker</h3>
-                        <p>Train, deploy, and manage ML models at scale</p>
-                    </div>
-                    
-                    <div class="service-card" data-service="comprehend" onclick="selectService(this)">
-                        <h3>📝 Amazon Comprehend</h3>
-                        <p>Natural language processing and text analytics</p>
-                    </div>
-                    
-                    <div class="service-card" data-service="lex" onclick="selectService(this)">
-                        <h3>💬 Amazon Lex</h3>
-                        <p>Build conversational interfaces and chatbots</p>
-                    </div>
-                    
-                    <div class="service-card" data-service="polly" onclick="selectService(this)">
-                        <h3>🔊 Amazon Polly</h3>
-                        <p>Turn text into lifelike speech</p>
-                    </div>
-                    
-                    <div class="service-card" data-service="rekognition" onclick="selectService(this)">
-                        <h3>👁️ Amazon Rekognition</h3>
-                        <p>Image and video analysis</p>
-                    </div>
+
+            <div class="input-area">
+                <label for="document-text"><strong>Paste your legal document or contract below:</strong></label>
+                <textarea id="document-text" placeholder="Enter the contract text here...
+
+Example: Employment Agreement, NDA, Service Agreement, etc."></textarea>
+
+                <div class="sample-contracts">
+                    <strong>Try a sample:</strong>
+                    <button class="sample-btn" onclick="loadSample('nda')">NDA</button>
+                    <button class="sample-btn" onclick="loadSample('service')">Service Agreement</button>
+                    <button class="sample-btn" onclick="loadSample('employment')">Employment</button>
                 </div>
-                
-                <button class="action-button" onclick="submitService()">Launch Selected Service</button>
-                
-                <div class="response-area" id="response-area">
-                    <h3>Service Information</h3>
-                    <p id="response-text"></p>
-                </div>
+            </div>
+
+            <div class="button-group">
+                <button onclick="analyzeDocument()">📊 Analyze Document</button>
+                <button onclick="clearResults()">🔄 Clear</button>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing document with AI...</p>
+            </div>
+
+            <div class="results" id="results">
+                <h2>Analysis Results</h2>
+                <div id="results-content"></div>
             </div>
         </div>
-        
-        <script>
-            let selectedService = null;
-            
-            // Update time every second
-            setInterval(() => {{
-                const now = new Date();
-                document.getElementById('current-time').textContent = now.toLocaleString();
-            }}, 1000);
-            
-            // Function to change city and fetch new weather
-            async function changeCity() {{
-                const citySelect = document.getElementById('city-select');
-                const selectedCity = citySelect.value;
-                const loading = document.getElementById('loading');
-                const weatherGrid = document.getElementById('weather-grid');
-                
-                // Show loading indicator
-                loading.classList.add('active');
-                weatherGrid.classList.add('pulse');
-                
-                try {{
-                    // Fetch weather data for selected city
-                    const response = await fetch(`${{window.location.origin}}${{window.location.pathname}}?city=${{selectedCity}}`);
-                    const weather = await response.json();
-                    
-                    // Update city name
-                    document.getElementById('city-name').textContent = weather.city;
-                    
-                    // Update weather information
-                    document.getElementById('temperature').textContent = 
-                        weather.temperature !== 'N/A' ? `${{weather.temperature}}°F` : 'N/A';
-                    document.getElementById('conditions').textContent = 
-                        weather.description !== 'Unable to fetch weather' ? 
-                        weather.description.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 
-                        'N/A';
-                    document.getElementById('humidity').textContent = 
-                        weather.humidity !== 'N/A' ? `${{weather.humidity}}%` : 'N/A';
-                    
-                    // Remove pulse animation after update
-                    setTimeout(() => {{
-                        weatherGrid.classList.remove('pulse');
-                    }}, 1000);
-                    
-                }} catch (error) {{
-                    console.error('Error fetching weather:', error);
-                    alert('Failed to fetch weather data. Please try again.');
-                }} finally {{
-                    // Hide loading indicator
-                    loading.classList.remove('active');
-                }}
-            }}
-            
-            function selectService(element) {{
-                // Remove previous selection
-                document.querySelectorAll('.service-card').forEach(card => {{
-                    card.classList.remove('selected');
-                }});
-                
-                // Add selection to clicked card
-                element.classList.add('selected');
-                selectedService = element.getAttribute('data-service');
-            }}
-            
-            async function submitService() {{
-                if (!selectedService) {{
-                    alert('Please select a service first!');
-                    return;
-                }}
-                
-                const responseArea = document.getElementById('response-area');
-                const responseText = document.getElementById('response-text');
-                
-                try {{
-                    const response = await fetch(window.location.href, {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                        }},
-                        body: JSON.stringify({{
-                            service: selectedService
-                        }})
-                    }});
-                    
-                    const data = await response.json();
-                    
-                    responseText.innerHTML = `
-                        <strong>Selected Service:</strong> ${{selectedService.toUpperCase()}}<br>
-                        <strong>Status:</strong> Ready to use<br>
-                        <strong>Timestamp:</strong> ${{data.timestamp}}<br>
-                        <br>
-                        <em>Next steps: Configure and integrate this service in your AWS Console.</em>
+    </div>
+
+    <script>
+        const SAMPLE_CONTRACTS = {
+            nda: `NON-DISCLOSURE AGREEMENT
+
+This Non-Disclosure Agreement ("Agreement") is entered into on [DATE] by and between Company A and Company B.
+
+1. CONFIDENTIAL INFORMATION
+The parties agree to share certain proprietary information for the purpose of evaluating a potential business relationship.
+
+2. OBLIGATIONS
+The receiving party shall hold all information in strict confidence and shall not disclose such information to third parties.
+
+3. TERM
+This Agreement shall remain in effect for a period of two (2) years from the date of execution.
+
+4. NO WARRANTIES
+All information is provided "as is" without any warranty.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement.`,
+
+            service: `SERVICE AGREEMENT
+
+This Service Agreement is entered into between Service Provider ("Provider") and Client.
+
+1. SERVICES
+Provider agrees to perform web development services as specified in attached Statement of Work.
+
+2. PAYMENT
+Client shall pay Provider $10,000 per month, due within 30 days of invoice.
+
+3. INTELLECTUAL PROPERTY
+All work product created by Provider shall become the sole property of Client upon full payment.
+
+4. TERMINATION
+Either party may terminate this agreement with 30 days written notice.
+
+5. INDEMNIFICATION
+Provider shall indemnify and hold harmless Client from any claims arising from Provider's negligence.
+
+6. GOVERNING LAW
+This Agreement shall be governed by the laws of the State of California.`,
+
+            employment: `EMPLOYMENT AGREEMENT
+
+This Employment Agreement is made between Employer Inc. and Employee.
+
+1. POSITION
+Employee is hired as Senior Software Engineer.
+
+2. COMPENSATION
+Base salary of $150,000 per year, payable bi-weekly.
+
+3. BENEFITS
+Employee is eligible for health insurance, 401k, and paid time off.
+
+4. CONFIDENTIALITY
+Employee agrees to maintain confidentiality of all proprietary information and trade secrets.
+
+5. NON-COMPETE
+Employee agrees not to compete with Employer for 2 years following termination within 50 miles.
+
+6. TERMINATION
+Employment is at-will and may be terminated by either party at any time.
+
+7. INTELLECTUAL PROPERTY
+All inventions and works created during employment belong to Employer.`
+        };
+
+        function loadSample(type) {
+            document.getElementById('document-text').value = SAMPLE_CONTRACTS[type];
+        }
+
+        async function analyzeDocument() {
+            const text = document.getElementById('document-text').value.trim();
+
+            if (!text) {
+                alert('Please enter a document to analyze');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        document: text,
+                        type: 'contract'
+                    })
+                });
+
+                const data = await response.json();
+                displayResults(data);
+
+            } catch (error) {
+                alert('Error analyzing document: ' + error.message);
+            } finally {
+                document.getElementById('loading').classList.remove('active');
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results-content');
+
+            let html = `
+                <div style="margin-bottom: 20px;">
+                    <h3>Overall Risk Assessment</h3>
+                    <div class="risk-badge risk-${data.risk_level}">
+                        Risk Level: ${data.risk_level} (Score: ${data.risk_score}/100)
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <h3>🤖 AI Analysis</h3>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; white-space: pre-wrap;">
+                        ${data.llm_analysis.summary}
+                    </div>
+                </div>
+            `;
+
+            if (data.identified_risks.length > 0) {
+                html += '<h3>⚠️ Identified Risks</h3>';
+                data.identified_risks.forEach(risk => {
+                    html += `
+                        <div class="risk-item ${risk.severity}">
+                            <strong>${risk.severity}:</strong> ${risk.description}<br>
+                            <em>Recommendation: ${risk.recommendation}</em>
+                        </div>
                     `;
-                    
-                    responseArea.classList.add('active');
-                }} catch (error) {{
-                    responseText.innerHTML = `<strong>Error:</strong> ${{error.message}}`;
-                    responseArea.classList.add('active');
-                }}
-            }}
-        </script>
-    </body>
-    </html>
+                });
+            }
+
+            if (data.missing_critical_clauses.length > 0) {
+                html += '<h3>📋 Missing Critical Clauses</h3>';
+                data.missing_critical_clauses.forEach(clause => {
+                    html += `<div class="missing-clause">❌ ${clause}</div>`;
+                });
+            }
+
+            if (data.identified_clauses.length > 0) {
+                html += '<h3>📄 Identified Clauses</h3>';
+                data.identified_clauses.forEach(clause => {
+                    html += `
+                        <div class="clause-item">
+                            <strong>${clause.category.replace(/_/g, ' ').toUpperCase()}</strong><br>
+                            <small>${clause.context.substring(0, 200)}...</small>
+                        </div>
+                    `;
+                });
+            }
+
+            if (data.relevant_precedents.length > 0) {
+                html += '<h3>📚 Relevant Legal Precedents</h3>';
+                data.relevant_precedents.forEach(prec => {
+                    html += `
+                        <div class="clause-item">
+                            <strong>${prec.category.replace(/_/g, ' ').toUpperCase()}</strong>
+                            (${prec.risk_level} Risk)<br>
+                            ${prec.description}<br>
+                            <em>Best Practice: ${prec.best_practice}</em>
+                        </div>
+                    `;
+                });
+            }
+
+            if (data.recommendations.length > 0) {
+                html += '<h3>💡 Recommendations</h3>';
+                data.recommendations.forEach(rec => {
+                    html += `<div class="recommendation">${rec}</div>`;
+                });
+            }
+
+            resultsDiv.innerHTML = html;
+            document.getElementById('results').classList.add('active');
+
+            // Scroll to results
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearResults() {
+            document.getElementById('document-text').value = '';
+            document.getElementById('results').classList.remove('active');
+        }
+    </script>
+</body>
+</html>
     """
-    
-    return html
+
+
+if __name__ == "__main__":
+    # Test locally
+    test_event = {
+        'httpMethod': 'GET',
+        'path': '/'
+    }
+    result = lambda_handler(test_event, None)
+    print(json.dumps(result, indent=2))
