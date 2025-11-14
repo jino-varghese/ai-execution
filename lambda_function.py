@@ -6,10 +6,22 @@ import os
 from datetime import datetime
 from typing import Dict, List, Any, Tuple
 import re
+import traceback
 
-# Initialize AWS clients
-bedrock_runtime = boto3.client('bedrock-runtime', region_name='us-east-1')
-s3_client = boto3.client('s3')
+# Initialize AWS clients (lazy initialization to avoid errors at import)
+bedrock_runtime = None
+s3_client = None
+
+def get_bedrock_client():
+    """Lazy initialization of Bedrock client"""
+    global bedrock_runtime
+    if bedrock_runtime is None:
+        try:
+            bedrock_runtime = boto3.client('bedrock-runtime', region_name='us-east-1')
+        except Exception as e:
+            print(f"Warning: Could not initialize Bedrock client: {str(e)}")
+            bedrock_runtime = None
+    return bedrock_runtime
 
 # Legal risk categories and patterns
 RISK_CATEGORIES = {
@@ -110,9 +122,25 @@ def lambda_handler(event, context):
     - POST /risk-assessment : Performs detailed risk assessment
     """
 
+    # Standard CORS headers for all responses
+    cors_headers = {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    }
+
     try:
         http_method = event.get('httpMethod', 'GET')
         path = event.get('path', '/')
+
+        # Handle OPTIONS for CORS preflight
+        if http_method == 'OPTIONS':
+            return {
+                'statusCode': 200,
+                'headers': cors_headers,
+                'body': json.dumps({'message': 'OK'})
+            }
 
         if http_method == 'GET':
             return {
@@ -122,46 +150,92 @@ def lambda_handler(event, context):
             }
 
         elif http_method == 'POST':
-            body = json.loads(event.get('body', '{}'))
+            # Parse request body with better error handling
+            try:
+                body = json.loads(event.get('body', '{}'))
+            except json.JSONDecodeError as e:
+                print(f"JSON decode error: {str(e)}")
+                return {
+                    'statusCode': 400,
+                    'headers': cors_headers,
+                    'body': json.dumps({
+                        'error': 'Invalid JSON in request body',
+                        'details': str(e)
+                    })
+                }
+
+            # Log the request for debugging
+            print(f"POST request received. Body keys: {list(body.keys())}")
 
             if 'document' in body:
                 # Analyze document
-                result = analyze_document(body)
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps(result)
-                }
+                try:
+                    result = analyze_document(body)
+                    return {
+                        'statusCode': 200,
+                        'headers': cors_headers,
+                        'body': json.dumps(result)
+                    }
+                except Exception as e:
+                    print(f"Error in analyze_document: {str(e)}")
+                    print(traceback.format_exc())
+                    return {
+                        'statusCode': 500,
+                        'headers': cors_headers,
+                        'body': json.dumps({
+                            'error': 'Analysis failed',
+                            'details': str(e),
+                            'type': type(e).__name__
+                        })
+                    }
+
             elif 'text' in body:
                 # Quick risk assessment
-                result = quick_risk_assessment(body['text'])
-                return {
-                    'statusCode': 200,
-                    'headers': {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    },
-                    'body': json.dumps(result)
-                }
+                try:
+                    result = quick_risk_assessment(body['text'])
+                    return {
+                        'statusCode': 200,
+                        'headers': cors_headers,
+                        'body': json.dumps(result)
+                    }
+                except Exception as e:
+                    print(f"Error in quick_risk_assessment: {str(e)}")
+                    return {
+                        'statusCode': 500,
+                        'headers': cors_headers,
+                        'body': json.dumps({
+                            'error': 'Risk assessment failed',
+                            'details': str(e)
+                        })
+                    }
             else:
                 return {
                     'statusCode': 400,
-                    'body': json.dumps({'error': 'No document or text provided'})
+                    'headers': cors_headers,
+                    'body': json.dumps({
+                        'error': 'No document or text provided',
+                        'received_keys': list(body.keys())
+                    })
                 }
 
         else:
             return {
                 'statusCode': 405,
-                'body': json.dumps({'error': 'Method not allowed'})
+                'headers': cors_headers,
+                'body': json.dumps({'error': f'Method {http_method} not allowed'})
             }
 
     except Exception as e:
+        print(f"Unhandled exception in lambda_handler: {str(e)}")
+        print(traceback.format_exc())
         return {
             'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
+            'headers': cors_headers,
+            'body': json.dumps({
+                'error': 'Internal server error',
+                'details': str(e),
+                'type': type(e).__name__
+            })
         }
 
 
@@ -331,6 +405,13 @@ def get_llm_analysis(text: str, doc_type: str) -> Dict[str, str]:
     Use AWS Bedrock (Claude) for detailed legal analysis
     """
     try:
+        # Get Bedrock client
+        client = get_bedrock_client()
+
+        if client is None:
+            print("Bedrock client not available, using fallback analysis")
+            return generate_fallback_analysis(text, doc_type)
+
         # Truncate text if too long (Claude has token limits)
         max_chars = 8000
         truncated_text = text[:max_chars] if len(text) > max_chars else text
@@ -362,13 +443,17 @@ Provide a structured analysis in clear, professional language."""
             "temperature": 0.3,
         }
 
-        response = bedrock_runtime.invoke_model(
+        print(f"Calling Bedrock with model: anthropic.claude-3-sonnet-20240229-v1:0")
+
+        response = client.invoke_model(
             modelId='anthropic.claude-3-sonnet-20240229-v1:0',
             body=json.dumps(request_body)
         )
 
         response_body = json.loads(response['body'].read())
         analysis = response_body['content'][0]['text']
+
+        print(f"Bedrock analysis successful, length: {len(analysis)}")
 
         return {
             'summary': analysis,
@@ -378,11 +463,47 @@ Provide a structured analysis in clear, professional language."""
 
     except Exception as e:
         # Fallback analysis if Bedrock is not available
-        return {
-            'summary': f'LLM analysis unavailable: {str(e)}. Using pattern-based analysis only.',
-            'model': 'fallback',
-            'confidence': 'low'
-        }
+        print(f"Bedrock error: {str(e)}, using fallback analysis")
+        print(traceback.format_exc())
+        return generate_fallback_analysis(text, doc_type)
+
+
+def generate_fallback_analysis(text: str, doc_type: str) -> Dict[str, str]:
+    """
+    Generate a basic analysis when Bedrock is not available
+    """
+    word_count = len(text.split())
+    has_indemnification = bool(re.search(r'indemnif', text, re.IGNORECASE))
+    has_liability_limit = bool(re.search(r'limitation\s+of\s+liability', text, re.IGNORECASE))
+    has_termination = bool(re.search(r'termination', text, re.IGNORECASE))
+    has_governing_law = bool(re.search(r'governing\s+law', text, re.IGNORECASE))
+
+    analysis = f"""**Pattern-Based Analysis** (AI analysis unavailable)
+
+**Summary**: This {doc_type} contains approximately {word_count} words.
+
+**Key Terms Detected**:
+- Indemnification clause: {'Yes' if has_indemnification else 'No'}
+- Limitation of liability: {'Yes' if has_liability_limit else 'No'}
+- Termination provisions: {'Yes' if has_termination else 'No'}
+- Governing law: {'Yes' if has_governing_law else 'No'}
+
+**Potential Issues**: Please review the detailed risk assessment below for specific concerns.
+
+**Overall Assessment**: Pattern-based analysis completed. For detailed AI analysis, please ensure AWS Bedrock access is enabled with Claude 3 Sonnet model.
+
+**Note**: This is a fallback analysis. To enable full AI-powered analysis:
+1. Go to AWS Console → Bedrock
+2. Click 'Model access' → 'Manage model access'
+3. Enable 'Anthropic Claude 3 Sonnet'
+4. Redeploy or update the Lambda function
+"""
+
+    return {
+        'summary': analysis,
+        'model': 'pattern-based-fallback',
+        'confidence': 'medium'
+    }
 
 
 def get_relevant_precedents(clauses: List[Dict], risks: List[Dict]) -> List[Dict]:
