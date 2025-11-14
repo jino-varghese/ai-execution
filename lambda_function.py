@@ -992,7 +992,7 @@ All inventions and works created during employment belong to Employer.`
             document.getElementById('results').classList.remove('active');
 
             try {
-                const response = await fetch(window.location.href, {
+                const response = await fetch(window.location.origin, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
