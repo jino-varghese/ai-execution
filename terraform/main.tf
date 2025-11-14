@@ -31,8 +31,8 @@ data "aws_region" "current" {}
 
 # IAM Role for Lambda
 resource "aws_iam_role" "lambda_role" {
-  name               = var.lambda_role_name
-  description        = "Execution role for Legal Document Analysis Agent"
+  name        = var.lambda_role_name
+  description = "Execution role for Legal Document Analysis Agent"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -90,16 +90,29 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 # Create deployment package
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/../lambda_function.py"
+  source_dir  = "${path.module}/../"
   output_path = "${path.module}/lambda_function.zip"
+
+  excludes = [
+    "terraform",
+    "package",
+    ".git",
+    "*.md",
+    "*.docx",
+    "*.sh",
+    "architecture.html",
+    "lambda_function-back.py",
+    "requirements.txt",
+    "Capstone-project-description.docx"
+  ]
 }
 
 # Lambda Function
 resource "aws_lambda_function" "legal_analyzer" {
   filename         = data.archive_file.lambda_zip.output_path
   function_name    = var.lambda_function_name
-  role            = aws_iam_role.lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
+  role             = aws_iam_role.lambda_role.arn
+  handler          = "lambda_function.lambda_handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
 
   runtime       = var.lambda_runtime
@@ -132,10 +145,19 @@ resource "aws_lambda_function_url" "legal_analyzer_url" {
   cors {
     allow_credentials = false
     allow_origins     = var.cors_allow_origins
-    allow_methods     = var.cors_allow_methods
-    allow_headers     = var.cors_allow_headers
-    max_age           = var.cors_max_age
+    allow_methods     = ["*"]
+    allow_headers     = ["*"]
+    max_age           = 86400
+
   }
+
+  # cors {
+  #   allow_credentials = false
+  #   allow_origins     = var.cors_allow_origins
+  #   allow_methods     = var.cors_allow_methods
+  #   allow_headers     = var.cors_allow_headers
+  #   max_age           = var.cors_max_age
+  # }
 }
 
 # Lambda permission for Function URL

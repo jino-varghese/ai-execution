@@ -1,0 +1,317 @@
+========================================
+Legal Document Analyzer - Backup
+Timestamp: Thu Nov 13 20:02:11 CST 2025
+========================================
+
+OUTPUTS:
+--------
+cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:929871258075:log-group:/aws/lambda/legal-document-analyzer"
+cloudwatch_log_group_name = "/aws/lambda/legal-document-analyzer"
+deployment_info = {
+  "account_id" = "929871258075"
+  "environment" = "dev"
+  "function_url_auth" = "NONE"
+  "memory_size" = 512
+  "region" = "us-east-1"
+  "runtime" = "python3.11"
+  "timeout" = 60
+}
+function_url = "https://6fqp473nekcxyy6zi62vukxauq0dbkpk.lambda-url.us-east-1.on.aws/"
+function_url_id = "6fqp473nekcxyy6zi62vukxauq0dbkpk"
+lambda_function_arn = "arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer"
+lambda_function_name = "legal-document-analyzer"
+lambda_function_version = "$LATEST"
+lambda_role_arn = "arn:aws:iam::929871258075:role/legal-document-analyzer-role"
+lambda_role_name = "legal-document-analyzer-role"
+quick_start = <<EOT
+==========================================
+Legal Document Analysis Agent Deployed!
+==========================================
+
+Access URL:
+https://6fqp473nekcxyy6zi62vukxauq0dbkpk.lambda-url.us-east-1.on.aws/
+
+Function Name: legal-document-analyzer
+Region: us-east-1
+
+Next Steps:
+1. Open the URL above in your browser
+2. Try the sample contracts (NDA, Service Agreement, Employment)
+3. Paste your own legal documents for analysis
+
+Important: Ensure AWS Bedrock access is enabled
+- AWS Console → Bedrock → Model access
+- Enable: Anthropic Claude 3 Sonnet
+
+Monitor Logs:
+aws logs tail /aws/lambda/legal-document-analyzer --follow --region us-east-1
+
+View Function:
+aws lambda get-function --function-name legal-document-analyzer --region us-east-1
+
+EOT
+
+RESOURCES:
+----------
+data.archive_file.lambda_zip
+data.aws_caller_identity.current
+data.aws_region.current
+aws_cloudwatch_log_group.lambda_logs
+aws_iam_role.lambda_role
+aws_iam_role_policy.bedrock_access
+aws_iam_role_policy_attachment.lambda_basic
+aws_lambda_function.legal_analyzer
+aws_lambda_function_url.legal_analyzer_url
+aws_lambda_permission.function_url
+
+STATE:
+------
+# data.archive_file.lambda_zip:
+data "archive_file" "lambda_zip" {
+    id                  = "e1eb5a0127b3501d11442b30bbf91d1f2851023d"
+    output_base64sha256 = "Ie3K+1KHftVgnbxl4ridt6FOFtJ9VIhCxcWHTwif10w="
+    output_base64sha512 = "woKFtbl8Swu8Oinfs0wnnNWN+nRXpwsEysFfKFXNIcBXMlfRIi3FAls3EVhwqhP0iGkaUzKyrJmrmg2PlnU0dg=="
+    output_md5          = "d0671e99d38932a2cebf8e4eabac4103"
+    output_path         = "./lambda_function.zip"
+    output_sha          = "e1eb5a0127b3501d11442b30bbf91d1f2851023d"
+    output_sha256       = "21edcafb52877ed5609dbc65e2b89db7a14e16d27d548842c5c5874f089fd74c"
+    output_sha512       = "c28285b5b97c4b0bbc3a29dfb34c279cd58dfa7457a70b04cac15f2855cd21c0573257d1222dc5025b37115870aa13f488691a5332b2ac99ab9a0d8f96753476"
+    output_size         = 9511
+    source_file         = "./../lambda_function.py"
+    type                = "zip"
+}
+
+# data.aws_caller_identity.current:
+data "aws_caller_identity" "current" {
+    account_id = "929871258075"
+    arn        = "arn:aws:iam::929871258075:user/gen-ai-automation"
+    id         = "929871258075"
+    user_id    = "AIDA5RAFFMHNSE4QFCSMP"
+}
+
+# data.aws_region.current:
+data "aws_region" "current" {
+    description = "US East (N. Virginia)"
+    endpoint    = "ec2.us-east-1.amazonaws.com"
+    id          = "us-east-1"
+    name        = "us-east-1"
+}
+
+# aws_cloudwatch_log_group.lambda_logs:
+resource "aws_cloudwatch_log_group" "lambda_logs" {
+    arn               = "arn:aws:logs:us-east-1:929871258075:log-group:/aws/lambda/legal-document-analyzer"
+    id                = "/aws/lambda/legal-document-analyzer"
+    log_group_class   = "STANDARD"
+    name              = "/aws/lambda/legal-document-analyzer"
+    retention_in_days = 7
+    skip_destroy      = false
+    tags              = {
+        "Name" = "legal-document-analyzer-logs"
+    }
+    tags_all          = {
+        "Environment" = "dev"
+        "ManagedBy"   = "Terraform"
+        "Name"        = "legal-document-analyzer-logs"
+        "Project"     = "Legal Document Analyzer"
+    }
+}
+
+# aws_iam_role.lambda_role:
+resource "aws_iam_role" "lambda_role" {
+    arn                   = "arn:aws:iam::929871258075:role/legal-document-analyzer-role"
+    assume_role_policy    = jsonencode(
+        {
+            Statement = [
+                {
+                    Action    = "sts:AssumeRole"
+                    Effect    = "Allow"
+                    Principal = {
+                        Service = "lambda.amazonaws.com"
+                    }
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    create_date           = "2025-11-14T01:53:47Z"
+    description           = "Execution role for Legal Document Analysis Agent"
+    force_detach_policies = false
+    id                    = "legal-document-analyzer-role"
+    managed_policy_arns   = []
+    max_session_duration  = 3600
+    name                  = "legal-document-analyzer-role"
+    path                  = "/"
+    tags                  = {
+        "Name" = "legal-document-analyzer-role"
+    }
+    tags_all              = {
+        "Environment" = "dev"
+        "ManagedBy"   = "Terraform"
+        "Name"        = "legal-document-analyzer-role"
+        "Project"     = "Legal Document Analyzer"
+    }
+    unique_id             = "AROA5RAFFMHNUPSDMK5WJ"
+}
+
+# aws_iam_role_policy.bedrock_access:
+resource "aws_iam_role_policy" "bedrock_access" {
+    id     = "legal-document-analyzer-role:BedrockAccess"
+    name   = "BedrockAccess"
+    policy = jsonencode(
+        {
+            Statement = [
+                {
+                    Action   = [
+                        "bedrock:InvokeModel",
+                        "bedrock:InvokeModelWithResponseStream",
+                    ]
+                    Effect   = "Allow"
+                    Resource = "arn:aws:bedrock:*::foundation-model/*"
+                },
+            ]
+            Version   = "2012-10-17"
+        }
+    )
+    role   = "legal-document-analyzer-role"
+}
+
+# aws_iam_role_policy_attachment.lambda_basic:
+resource "aws_iam_role_policy_attachment" "lambda_basic" {
+    id         = "legal-document-analyzer-role-20251114015348019200000001"
+    policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+    role       = "legal-document-analyzer-role"
+}
+
+# aws_lambda_function.legal_analyzer:
+resource "aws_lambda_function" "legal_analyzer" {
+    architectures                  = [
+        "x86_64",
+    ]
+    arn                            = "arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer"
+    code_sha256                    = "Ie3K+1KHftVgnbxl4ridt6FOFtJ9VIhCxcWHTwif10w="
+    description                    = "Legal Document Review and Contract Analysis Agent with AI-powered risk assessment"
+    filename                       = "./lambda_function.zip"
+    function_name                  = "legal-document-analyzer"
+    handler                        = "lambda_function.lambda_handler"
+    id                             = "legal-document-analyzer"
+    invoke_arn                     = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer/invocations"
+    last_modified                  = "2025-11-14T01:53:56.836+0000"
+    memory_size                    = 512
+    package_type                   = "Zip"
+    publish                        = false
+    qualified_arn                  = "arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer:$LATEST"
+    qualified_invoke_arn           = "arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer:$LATEST/invocations"
+    reserved_concurrent_executions = -1
+    role                           = "arn:aws:iam::929871258075:role/legal-document-analyzer-role"
+    runtime                        = "python3.11"
+    skip_destroy                   = false
+    source_code_hash               = "Ie3K+1KHftVgnbxl4ridt6FOFtJ9VIhCxcWHTwif10w="
+    source_code_size               = 9511
+    tags                           = {
+        "Name" = "legal-document-analyzer"
+    }
+    tags_all                       = {
+        "Environment" = "dev"
+        "ManagedBy"   = "Terraform"
+        "Name"        = "legal-document-analyzer"
+        "Project"     = "Legal Document Analyzer"
+    }
+    timeout                        = 60
+    version                        = "$LATEST"
+
+    ephemeral_storage {
+        size = 512
+    }
+
+    logging_config {
+        log_format = "Text"
+        log_group  = "/aws/lambda/legal-document-analyzer"
+    }
+
+    tracing_config {
+        mode = "PassThrough"
+    }
+}
+
+# aws_lambda_function_url.legal_analyzer_url:
+resource "aws_lambda_function_url" "legal_analyzer_url" {
+    authorization_type = "NONE"
+    function_arn       = "arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer"
+    function_name      = "legal-document-analyzer"
+    function_url       = "https://6fqp473nekcxyy6zi62vukxauq0dbkpk.lambda-url.us-east-1.on.aws/"
+    id                 = "legal-document-analyzer"
+    invoke_mode        = "BUFFERED"
+    url_id             = "6fqp473nekcxyy6zi62vukxauq0dbkpk"
+
+    cors {
+        allow_credentials = false
+        allow_headers     = [
+            "*",
+        ]
+        allow_methods     = [
+            "*",
+        ]
+        allow_origins     = [
+            "*",
+        ]
+        max_age           = 86400
+    }
+}
+
+# aws_lambda_permission.function_url:
+resource "aws_lambda_permission" "function_url" {
+    action                 = "lambda:InvokeFunctionUrl"
+    function_name          = "legal-document-analyzer"
+    function_url_auth_type = "NONE"
+    id                     = "FunctionURLAllowPublicAccess"
+    principal              = "*"
+    statement_id           = "FunctionURLAllowPublicAccess"
+}
+
+
+Outputs:
+
+cloudwatch_log_group_arn = "arn:aws:logs:us-east-1:929871258075:log-group:/aws/lambda/legal-document-analyzer"
+cloudwatch_log_group_name = "/aws/lambda/legal-document-analyzer"
+deployment_info = {
+    account_id        = "929871258075"
+    environment       = "dev"
+    function_url_auth = "NONE"
+    memory_size       = 512
+    region            = "us-east-1"
+    runtime           = "python3.11"
+    timeout           = 60
+}
+function_url = "https://6fqp473nekcxyy6zi62vukxauq0dbkpk.lambda-url.us-east-1.on.aws/"
+function_url_id = "6fqp473nekcxyy6zi62vukxauq0dbkpk"
+lambda_function_arn = "arn:aws:lambda:us-east-1:929871258075:function:legal-document-analyzer"
+lambda_function_name = "legal-document-analyzer"
+lambda_function_version = "$LATEST"
+lambda_role_arn = "arn:aws:iam::929871258075:role/legal-document-analyzer-role"
+lambda_role_name = "legal-document-analyzer-role"
+quick_start = <<-EOT
+    ==========================================
+    Legal Document Analysis Agent Deployed!
+    ==========================================
+    
+    Access URL:
+    https://6fqp473nekcxyy6zi62vukxauq0dbkpk.lambda-url.us-east-1.on.aws/
+    
+    Function Name: legal-document-analyzer
+    Region: us-east-1
+    
+    Next Steps:
+    1. Open the URL above in your browser
+    2. Try the sample contracts (NDA, Service Agreement, Employment)
+    3. Paste your own legal documents for analysis
+    
+    Important: Ensure AWS Bedrock access is enabled
+    - AWS Console → Bedrock → Model access
+    - Enable: Anthropic Claude 3 Sonnet
+    
+    Monitor Logs:
+    aws logs tail /aws/lambda/legal-document-analyzer --follow --region us-east-1
+    
+    View Function:
+    aws lambda get-function --function-name legal-document-analyzer --region us-east-1
+EOT

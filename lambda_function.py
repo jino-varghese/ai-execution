@@ -590,262 +590,53 @@ def get_html_ui() -> str:
     """
     Generate web UI for the legal document analyzer
     """
-    return """
-<!DOCTYPE html>
+    # Try to read from external file first
+    try:
+        import os
+        # Check if index.html exists in the same directory
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        html_path = os.path.join(current_dir, 'index.html')
+
+        if os.path.exists(html_path):
+            with open(html_path, 'r', encoding='utf-8') as f:
+                return f.read()
+    except Exception as e:
+        print(f"Could not read index.html: {e}")
+
+    # Fallback HTML with fixed JavaScript
+    return '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Legal Document Analysis Agent</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        h1 {
-            color: #1e3c72;
-            margin-bottom: 10px;
-            font-size: 2em;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 1.1em;
-        }
-
-        .main-section {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        h2 {
-            color: #1e3c72;
-            margin-bottom: 20px;
-        }
-
-        .input-area {
-            margin-bottom: 20px;
-        }
-
-        textarea {
-            width: 100%;
-            min-height: 300px;
-            padding: 15px;
-            border: 2px solid #1e3c72;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            resize: vertical;
-        }
-
-        textarea:focus {
-            outline: none;
-            border-color: #2a5298;
-            box-shadow: 0 0 10px rgba(30, 60, 114, 0.3);
-        }
-
-        .button-group {
-            display: flex;
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        button {
-            background: #1e3c72;
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            background: #2a5298;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .results {
-            display: none;
-            margin-top: 30px;
-        }
-
-        .results.active {
-            display: block;
-        }
-
-        .risk-badge {
-            display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .risk-CRITICAL {
-            background: #dc3545;
-            color: white;
-        }
-
-        .risk-HIGH {
-            background: #fd7e14;
-            color: white;
-        }
-
-        .risk-MEDIUM {
-            background: #ffc107;
-            color: #000;
-        }
-
-        .risk-LOW {
-            background: #28a745;
-            color: white;
-        }
-
-        .risk-item {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-            border-left: 4px solid #dc3545;
-        }
-
-        .risk-item.HIGH {
-            border-left-color: #fd7e14;
-        }
-
-        .risk-item.MEDIUM {
-            border-left-color: #ffc107;
-        }
-
-        .risk-item.LOW {
-            border-left-color: #28a745;
-        }
-
-        .clause-item {
-            background: #e7f3ff;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 8px 0;
-            border-left: 3px solid #1e3c72;
-        }
-
-        .missing-clause {
-            background: #fff3cd;
-            padding: 8px 15px;
-            border-radius: 8px;
-            margin: 5px 0;
-            border-left: 3px solid #ffc107;
-        }
-
-        .recommendation {
-            background: #d4edda;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin: 8px 0;
-            border-left: 3px solid #28a745;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            color: #1e3c72;
-        }
-
-        .loading.active {
-            display: block;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1e3c72;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
-        }
-
-        .feature-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            text-align: center;
-        }
-
-        .feature-card h3 {
-            color: white;
-            margin-bottom: 10px;
-        }
-
-        .sample-contracts {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .sample-btn {
-            background: #667eea;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            border-radius: 15px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .sample-btn:hover {
-            background: #764ba2;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header { background: white; border-radius: 15px; padding: 30px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        h1 { color: #1e3c72; margin-bottom: 10px; font-size: 2em; }
+        .subtitle { color: #666; font-size: 1.1em; }
+        .main-section { background: white; border-radius: 15px; padding: 30px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        h2 { color: #1e3c72; margin-bottom: 20px; }
+        .input-area { margin-bottom: 20px; }
+        textarea { width: 100%; min-height: 300px; padding: 15px; border: 2px solid #1e3c72; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 14px; resize: vertical; }
+        textarea:focus { outline: none; border-color: #2a5298; box-shadow: 0 0 10px rgba(30, 60, 114, 0.3); }
+        .button-group { display: flex; gap: 15px; margin-top: 15px; }
+        button { background: #1e3c72; color: white; padding: 12px 30px; border: none; border-radius: 25px; font-size: 16px; cursor: pointer; transition: all 0.3s; }
+        button:hover { background: #2a5298; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .results { display: none; margin-top: 30px; }
+        .results.active { display: block; }
+        .risk-badge { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin: 10px 0; }
+        .risk-CRITICAL { background: #dc3545; color: white; }
+        .risk-HIGH { background: #fd7e14; color: white; }
+        .risk-MEDIUM { background: #ffc107; color: #000; }
+        .risk-LOW { background: #28a745; color: white; }
+        .loading { display: none; text-align: center; padding: 20px; color: #1e3c72; }
+        .loading.active { display: block; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #1e3c72; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -854,276 +645,28 @@ def get_html_ui() -> str:
             <h1>⚖️ Legal Document Analysis Agent</h1>
             <p class="subtitle">AI-Powered Contract Review & Risk Assessment</p>
         </div>
-
         <div class="main-section">
             <h2>Document Analysis</h2>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>🤖 LLM Analysis</h3>
-                    <p>Powered by Claude AI for deep legal understanding</p>
-                </div>
-                <div class="feature-card">
-                    <h3>📚 RAG System</h3>
-                    <p>Retrieves relevant legal precedents and case law</p>
-                </div>
-                <div class="feature-card">
-                    <h3>⚠️ Risk Detection</h3>
-                    <p>Identifies potential legal risks and missing clauses</p>
-                </div>
-                <div class="feature-card">
-                    <h3>💡 Recommendations</h3>
-                    <p>Actionable insights to improve contracts</p>
-                </div>
-            </div>
-
             <div class="input-area">
                 <label for="document-text"><strong>Paste your legal document or contract below:</strong></label>
-                <textarea id="document-text" placeholder="Enter the contract text here...
-
-Example: Employment Agreement, NDA, Service Agreement, etc."></textarea>
-
-                <div class="sample-contracts">
-                    <strong>Try a sample:</strong>
-                    <button class="sample-btn" onclick="loadSample('nda')">NDA</button>
-                    <button class="sample-btn" onclick="loadSample('service')">Service Agreement</button>
-                    <button class="sample-btn" onclick="loadSample('employment')">Employment</button>
-                </div>
+                <textarea id="document-text" placeholder="Enter the contract text here..."></textarea>
             </div>
-
             <div class="button-group">
                 <button onclick="analyzeDocument()">📊 Analyze Document</button>
                 <button onclick="clearResults()">🔄 Clear</button>
             </div>
-
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <p>Analyzing document with AI...</p>
-            </div>
-
-            <div class="results" id="results">
-                <h2>Analysis Results</h2>
-                <div id="results-content"></div>
-            </div>
+            <div class="loading" id="loading"><div class="spinner"></div><p>Analyzing document with AI...</p></div>
+            <div class="results" id="results"><h2>Analysis Results</h2><div id="results-content"></div></div>
         </div>
     </div>
-
     <script>
-        const SAMPLE_CONTRACTS = {
-            nda: `NON-DISCLOSURE AGREEMENT
-
-This Non-Disclosure Agreement ("Agreement") is entered into on [DATE] by and between Company A and Company B.
-
-1. CONFIDENTIAL INFORMATION
-The parties agree to share certain proprietary information for the purpose of evaluating a potential business relationship.
-
-2. OBLIGATIONS
-The receiving party shall hold all information in strict confidence and shall not disclose such information to third parties.
-
-3. TERM
-This Agreement shall remain in effect for a period of two (2) years from the date of execution.
-
-4. NO WARRANTIES
-All information is provided "as is" without any warranty.
-
-IN WITNESS WHEREOF, the parties have executed this Agreement.`,
-
-            service: `SERVICE AGREEMENT
-
-This Service Agreement is entered into between Service Provider ("Provider") and Client.
-
-1. SERVICES
-Provider agrees to perform web development services as specified in attached Statement of Work.
-
-2. PAYMENT
-Client shall pay Provider $10,000 per month, due within 30 days of invoice.
-
-3. INTELLECTUAL PROPERTY
-All work product created by Provider shall become the sole property of Client upon full payment.
-
-4. TERMINATION
-Either party may terminate this agreement with 30 days written notice.
-
-5. INDEMNIFICATION
-Provider shall indemnify and hold harmless Client from any claims arising from Provider's negligence.
-
-6. GOVERNING LAW
-This Agreement shall be governed by the laws of the State of California.`,
-
-            employment: `EMPLOYMENT AGREEMENT
-
-This Employment Agreement is made between Employer Inc. and Employee.
-
-1. POSITION
-Employee is hired as Senior Software Engineer.
-
-2. COMPENSATION
-Base salary of $150,000 per year, payable bi-weekly.
-
-3. BENEFITS
-Employee is eligible for health insurance, 401k, and paid time off.
-
-4. CONFIDENTIALITY
-Employee agrees to maintain confidentiality of all proprietary information and trade secrets.
-
-5. NON-COMPETE
-Employee agrees not to compete with Employer for 2 years following termination within 50 miles.
-
-6. TERMINATION
-Employment is at-will and may be terminated by either party at any time.
-
-7. INTELLECTUAL PROPERTY
-All inventions and works created during employment belong to Employer.`
-        };
-
-        function loadSample(type) {
-            document.getElementById('document-text').value = SAMPLE_CONTRACTS[type];
-        }
-
-        async function analyzeDocument() {
-            const text = document.getElementById('document-text').value.trim();
-
-            if (!text) {
-                alert('Please enter a document to analyze');
-                return;
-            }
-
-            // Show loading
-            document.getElementById('loading').classList.add('active');
-            document.getElementById('results').classList.remove('active');
-
-            try {
-                const response = await fetch(window.location.origin, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        document: text,
-                        type: 'contract'
-                    })
-                });
-
-                // Check if response is OK
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-
-                // Check Content-Type before parsing
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const textResponse = await response.text();
-                    console.error('Non-JSON response received:', textResponse.substring(0, 500));
-                    throw new Error('Server returned HTML instead of JSON. This usually means:\n\n' +
-                        '1. The Lambda function encountered an error\n' +
-                        '2. The function timed out (increase timeout in AWS)\n' +
-                        '3. AWS Bedrock access is not enabled\n\n' +
-                        'Check CloudWatch Logs for details, or try a shorter document.');
-                }
-
-                const data = await response.json();
-
-                // Check if response contains an error
-                if (data.error) {
-                    throw new Error(data.error + (data.details ? '\n\nDetails: ' + data.details : ''));
-                }
-
-                displayResults(data);
-
-            } catch (error) {
-                console.error('Full error:', error);
-                alert('Error analyzing document:\n\n' + error.message);
-            } finally {
-                document.getElementById('loading').classList.remove('active');
-            }
-        }
-
-        function displayResults(data) {
-            const resultsDiv = document.getElementById('results-content');
-
-            let html = `
-                <div style="margin-bottom: 20px;">
-                    <h3>Overall Risk Assessment</h3>
-                    <div class="risk-badge risk-${data.risk_level}">
-                        Risk Level: ${data.risk_level} (Score: ${data.risk_score}/100)
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <h3>🤖 AI Analysis</h3>
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; white-space: pre-wrap;">
-                        ${data.llm_analysis.summary}
-                    </div>
-                </div>
-            `;
-
-            if (data.identified_risks.length > 0) {
-                html += '<h3>⚠️ Identified Risks</h3>';
-                data.identified_risks.forEach(risk => {
-                    html += `
-                        <div class="risk-item ${risk.severity}">
-                            <strong>${risk.severity}:</strong> ${risk.description}<br>
-                            <em>Recommendation: ${risk.recommendation}</em>
-                        </div>
-                    `;
-                });
-            }
-
-            if (data.missing_critical_clauses.length > 0) {
-                html += '<h3>📋 Missing Critical Clauses</h3>';
-                data.missing_critical_clauses.forEach(clause => {
-                    html += `<div class="missing-clause">❌ ${clause}</div>`;
-                });
-            }
-
-            if (data.identified_clauses.length > 0) {
-                html += '<h3>📄 Identified Clauses</h3>';
-                data.identified_clauses.forEach(clause => {
-                    html += `
-                        <div class="clause-item">
-                            <strong>${clause.category.replace(/_/g, ' ').toUpperCase()}</strong><br>
-                            <small>${clause.context.substring(0, 200)}...</small>
-                        </div>
-                    `;
-                });
-            }
-
-            if (data.relevant_precedents.length > 0) {
-                html += '<h3>📚 Relevant Legal Precedents</h3>';
-                data.relevant_precedents.forEach(prec => {
-                    html += `
-                        <div class="clause-item">
-                            <strong>${prec.category.replace(/_/g, ' ').toUpperCase()}</strong>
-                            (${prec.risk_level} Risk)<br>
-                            ${prec.description}<br>
-                            <em>Best Practice: ${prec.best_practice}</em>
-                        </div>
-                    `;
-                });
-            }
-
-            if (data.recommendations.length > 0) {
-                html += '<h3>💡 Recommendations</h3>';
-                data.recommendations.forEach(rec => {
-                    html += `<div class="recommendation">${rec}</div>`;
-                });
-            }
-
-            resultsDiv.innerHTML = html;
-            document.getElementById('results').classList.add('active');
-
-            // Scroll to results
-            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function clearResults() {
-            document.getElementById('document-text').value = '';
-            document.getElementById('results').classList.remove('active');
-        }
+        console.log("Script loading...");
+        function analyzeDocument() { alert("Function works!"); }
+        function clearResults() { document.getElementById("document-text").value = ""; document.getElementById("results").classList.remove("active"); }
+        console.log("Script loaded!");
     </script>
 </body>
-</html>
-    """
+</html>'''
 
 
 if __name__ == "__main__":

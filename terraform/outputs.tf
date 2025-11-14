@@ -50,20 +50,20 @@ output "cloudwatch_log_group_arn" {
 output "deployment_info" {
   description = "Deployment information"
   value = {
-    region              = data.aws_region.current.name
-    account_id          = data.aws_caller_identity.current.account_id
-    runtime             = var.lambda_runtime
-    memory_size         = var.lambda_memory_size
-    timeout             = var.lambda_timeout
-    environment         = var.environment
-    function_url_auth   = var.function_url_auth_type
+    region            = data.aws_region.current.name
+    account_id        = data.aws_caller_identity.current.account_id
+    runtime           = var.lambda_runtime
+    memory_size       = var.lambda_memory_size
+    timeout           = var.lambda_timeout
+    environment       = var.environment
+    function_url_auth = var.function_url_auth_type
   }
 }
 
 # Quick Start Guide
 output "quick_start" {
   description = "Quick start instructions"
-  value = <<-EOT
+  value       = <<-EOT
     ==========================================
     Legal Document Analysis Agent Deployed!
     ==========================================
