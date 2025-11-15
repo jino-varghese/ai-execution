@@ -1,0 +1,69 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform/
+.terraform.lock.hcl
+terraform-outputs.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# AWS
+.aws/
+
+# Docker
+docker-compose.override.yml
+
+# Application specific
+*.sqlite3
+*.db
+uploads/
+temp/
+cache/
+
+# Lambda deployment packages
+*.zip
+modules/lambda/index.py
+modules/lambda/lambda_placeholder.zip
+
+# Secrets
+secrets/
+*.pem
+*.key
+
+# OS
+Thumbs.db
