@@ -1,0 +1,86 @@
+[
+  {
+    "patient_id": "SAMPLE001",
+    "age": 45,
+    "gender": "male",
+    "symptoms": [
+      "persistent cough for 3 weeks",
+      "night sweats",
+      "unexplained weight loss"
+    ],
+    "medical_history": [
+      "no significant medical history"
+    ],
+    "diagnosis": "Further investigation needed - possible infection or malignancy",
+    "treatment": "Chest X-ray, CBC, tuberculosis screening",
+    "notes": "Referred to pulmonologist for comprehensive evaluation"
+  },
+  {
+    "patient_id": "SAMPLE002",
+    "age": 62,
+    "gender": "female",
+    "symptoms": [
+      "increased thirst",
+      "frequent urination",
+      "blurred vision"
+    ],
+    "medical_history": [
+      "obesity (BMI 31)",
+      "family history of diabetes"
+    ],
+    "diagnosis": "Type 2 Diabetes Mellitus",
+    "treatment": "Metformin 500mg twice daily, dietary modifications, exercise program",
+    "notes": "HbA1c: 8.2%. Patient education on glucose monitoring and lifestyle changes"
+  },
+  {
+    "patient_id": "SAMPLE003",
+    "age": 28,
+    "gender": "female",
+    "symptoms": [
+      "severe headache",
+      "visual disturbances",
+      "sensitivity to light"
+    ],
+    "medical_history": [
+      "previous history of migraines"
+    ],
+    "diagnosis": "Migraine with aura",
+    "treatment": "Sumatriptan as needed, preventive therapy with propranolol",
+    "notes": "Advised to maintain headache diary and identify triggers"
+  },
+  {
+    "patient_id": "SAMPLE004",
+    "age": 55,
+    "gender": "male",
+    "symptoms": [
+      "chest pain on exertion",
+      "relieved by rest",
+      "lasts 5-10 minutes"
+    ],
+    "medical_history": [
+      "hypertension",
+      "high cholesterol",
+      "smoker"
+    ],
+    "diagnosis": "Stable angina - suspected coronary artery disease",
+    "treatment": "Aspirin, statin, beta-blocker. Stress test scheduled.",
+    "notes": "High cardiovascular risk. Smoking cessation counseling provided."
+  },
+  {
+    "patient_id": "SAMPLE005",
+    "age": 72,
+    "gender": "female",
+    "symptoms": [
+      "memory problems",
+      "difficulty with daily tasks",
+      "confusion about time and place"
+    ],
+    "medical_history": [
+      "hypertension",
+      "osteoarthritis"
+    ],
+    "diagnosis": "Mild cognitive impairment - possible early dementia",
+    "treatment": "Cognitive assessment, brain imaging, exclude reversible causes",
+    "notes": "Family meeting scheduled to discuss care planning and safety"
+  }
+]

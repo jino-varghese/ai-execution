@@ -1,0 +1,65 @@
+# AI Medical Diagnosis System Configuration
+
+# LLM Configuration
+llm:
+  model_name: "gpt-4"  # Can be replaced with fine-tuned model
+  base_model: "meta-llama/Llama-2-70b-hf"  # For fine-tuning
+  temperature: 0.3  # Lower temperature for medical accuracy
+  max_tokens: 2048
+  api_key_env: "OPENAI_API_KEY"
+
+# Fine-tuning Configuration
+fine_tuning:
+  enabled: true
+  epochs: 3
+  batch_size: 4
+  learning_rate: 2e-5
+  output_dir: "./models/fine_tuned"
+  medical_datasets:
+    - "data/processed/medical_literature.jsonl"
+    - "data/processed/patient_records.jsonl"
+    - "data/processed/treatment_protocols.jsonl"
+
+# RAG Configuration
+rag:
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  vector_db: "chromadb"
+  chunk_size: 512
+  chunk_overlap: 50
+  top_k: 5  # Number of relevant documents to retrieve
+  similarity_threshold: 0.7
+
+  # Knowledge sources
+  knowledge_sources:
+    medical_literature: "data/medical_literature"
+    drug_databases: "data/drug_databases"
+    clinical_trials: "data/clinical_trials"
+    treatment_guidelines: "data/treatment_guidelines"
+
+# Agent Configuration
+agent:
+  name: "MedicalDiagnosisAgent"
+  max_iterations: 5
+  confidence_threshold: 0.75
+  require_human_review: true  # Safety feature
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  debug: false
+  cors_enabled: true
+  rate_limit: "100/hour"
+
+# Security & Compliance
+security:
+  hipaa_compliant: true
+  encrypt_data: true
+  audit_logging: true
+  require_authentication: true
+
+# Logging
+logging:
+  level: "INFO"
+  file: "logs/medical_diagnosis.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

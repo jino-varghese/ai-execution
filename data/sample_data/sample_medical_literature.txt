@@ -1,0 +1,125 @@
+MEDICAL LITERATURE SAMPLE DOCUMENT
+
+Title: Advances in Cardiovascular Disease Management
+
+Abstract:
+Cardiovascular disease remains the leading cause of mortality worldwide. Recent advances in diagnostic techniques and treatment protocols have improved patient outcomes significantly.
+
+Introduction:
+Coronary artery disease (CAD) affects millions of people globally. Early detection and intervention are crucial for preventing adverse cardiovascular events.
+
+Diagnosis:
+- Electrocardiogram (ECG/EKG) for detecting arrhythmias and ischemia
+- Stress testing to evaluate cardiac function under exertion
+- Coronary angiography for visualizing arterial blockages
+- Cardiac biomarkers (troponin, BNP) for acute coronary syndrome
+
+Treatment Protocols:
+1. Lifestyle Modifications:
+   - Smoking cessation
+   - Mediterranean diet
+   - Regular aerobic exercise (150 minutes/week)
+   - Stress management
+
+2. Pharmacological Interventions:
+   - Antiplatelet therapy (aspirin, clopidogrel)
+   - Statins for cholesterol management
+   - ACE inhibitors or ARBs for blood pressure control
+   - Beta-blockers for heart rate management
+
+3. Interventional Procedures:
+   - Percutaneous coronary intervention (PCI) with stenting
+   - Coronary artery bypass grafting (CABG) for severe disease
+
+Risk Stratification:
+High-risk patients include those with:
+- Previous myocardial infarction
+- Diabetes mellitus
+- Multiple cardiovascular risk factors
+- Family history of premature CAD
+
+Conclusion:
+Evidence-based approaches to cardiovascular disease management, combining lifestyle modifications with appropriate medical therapy, significantly reduce morbidity and mortality.
+
+---
+
+Title: Type 2 Diabetes Management Guidelines
+
+Abstract:
+Type 2 diabetes mellitus is a chronic metabolic disorder characterized by insulin resistance and hyperglycemia. Comprehensive management includes lifestyle interventions and pharmacotherapy.
+
+Diagnostic Criteria:
+- Fasting plasma glucose ≥126 mg/dL
+- HbA1c ≥6.5%
+- Random plasma glucose ≥200 mg/dL with symptoms
+- 2-hour plasma glucose ≥200 mg/dL during oral glucose tolerance test
+
+First-Line Treatment:
+Metformin remains the first-line pharmacological agent unless contraindicated.
+
+Mechanism: Decreases hepatic glucose production, improves insulin sensitivity
+Dosing: Start 500mg once or twice daily, titrate to 2000mg daily
+Side effects: GI upset, rare lactic acidosis
+
+Additional Therapies:
+- SGLT-2 inhibitors: Cardiovascular and renal benefits
+- GLP-1 receptor agonists: Weight loss, cardiovascular protection
+- DPP-4 inhibitors: Generally well-tolerated
+- Insulin: For inadequate glycemic control
+
+Target Goals:
+- HbA1c <7% for most patients
+- Individualize based on age, comorbidities, hypoglycemia risk
+
+Complications:
+- Microvascular: Retinopathy, nephropathy, neuropathy
+- Macrovascular: Coronary artery disease, stroke, peripheral vascular disease
+
+Monitoring:
+- HbA1c every 3-6 months
+- Annual comprehensive foot exam
+- Annual dilated eye exam
+- Annual urine albumin-to-creatinine ratio
+- Lipid panel
+
+---
+
+Title: Migraine Diagnosis and Management
+
+Migraine is a common neurological disorder characterized by recurrent episodes of moderate to severe headache.
+
+Clinical Features:
+- Unilateral location (but can be bilateral)
+- Pulsating quality
+- Moderate to severe intensity
+- Aggravated by physical activity
+- Associated symptoms: nausea, photophobia, phonophobia
+
+Migraine with Aura:
+Visual aura most common: scintillating scotoma, zigzag lines
+Aura typically lasts 5-60 minutes
+
+Acute Treatment:
+- NSAIDs (ibuprofen 400-800mg, naproxen 500-1000mg)
+- Triptans (sumatriptan, rizatriptan, eletriptan)
+- Antiemetics for nausea
+
+Preventive Therapy (for ≥4 headache days/month):
+- Beta-blockers (propranolol, metoprolol)
+- Anticonvulsants (topiramate, valproate)
+- Antidepressants (amitriptyline)
+- CGRP monoclonal antibodies (erenumab, fremanezumab)
+
+Lifestyle Modifications:
+- Regular sleep schedule
+- Adequate hydration
+- Identify and avoid triggers
+- Stress management
+- Regular meals
+
+Red Flags Requiring Imaging:
+- Sudden onset "thunderclap" headache
+- New onset after age 50
+- Progressive worsening
+- Neurological deficits
+- Change in headache pattern
