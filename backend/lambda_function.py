@@ -4,9 +4,10 @@ from datetime import datetime
 import os
 
 # Initialize AWS Bedrock client
+# AWS_REGION is automatically provided by Lambda runtime
 bedrock_runtime = boto3.client(
     service_name='bedrock-runtime',
-    region_name=os.environ.get('AWS_REGION', 'us-east-1')
+    region_name=os.environ.get('AWS_REGION', os.environ.get('AWS_DEFAULT_REGION', 'us-east-1'))
 )
 
 # Model ID for Claude 3 Sonnet on Bedrock

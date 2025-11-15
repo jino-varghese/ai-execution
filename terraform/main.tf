@@ -187,7 +187,6 @@ resource "aws_lambda_function" "itinerary_generator" {
   environment {
     variables = {
       ENVIRONMENT = var.environment
-      AWS_REGION  = var.aws_region
     }
   }
 
