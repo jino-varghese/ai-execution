@@ -1,0 +1,200 @@
+{
+  "destinations": [
+    {
+      "id": "paris",
+      "name": "Paris",
+      "country": "France",
+      "description": "The City of Light offers world-class museums, iconic landmarks, and exceptional cuisine.",
+      "best_time_to_visit": "April-June, September-October",
+      "average_budget": {
+        "budget": "$100-150/day",
+        "moderate": "$200-350/day",
+        "luxury": "$500+/day"
+      },
+      "top_attractions": [
+        {
+          "name": "Eiffel Tower",
+          "category": "landmark",
+          "description": "Iconic iron tower with stunning city views",
+          "estimated_time": "2-3 hours",
+          "ticket_required": true
+        },
+        {
+          "name": "Louvre Museum",
+          "category": "culture",
+          "description": "World's largest art museum, home to the Mona Lisa",
+          "estimated_time": "3-4 hours",
+          "ticket_required": true
+        },
+        {
+          "name": "Notre-Dame Cathedral",
+          "category": "culture",
+          "description": "Gothic masterpiece (currently under restoration)",
+          "estimated_time": "1-2 hours",
+          "ticket_required": false
+        }
+      ],
+      "local_cuisine": [
+        "Croissants and pastries",
+        "French onion soup",
+        "Coq au vin",
+        "Crème brûlée",
+        "Escargots"
+      ],
+      "transportation": "Excellent metro system, walkable city center",
+      "language": "French",
+      "currency": "EUR"
+    },
+    {
+      "id": "tokyo",
+      "name": "Tokyo",
+      "country": "Japan",
+      "description": "A fascinating blend of ancient tradition and cutting-edge technology.",
+      "best_time_to_visit": "March-May, September-November",
+      "average_budget": {
+        "budget": "$80-120/day",
+        "moderate": "$150-300/day",
+        "luxury": "$500+/day"
+      },
+      "top_attractions": [
+        {
+          "name": "Senso-ji Temple",
+          "category": "culture",
+          "description": "Tokyo's oldest Buddhist temple in Asakusa",
+          "estimated_time": "2 hours",
+          "ticket_required": false
+        },
+        {
+          "name": "Tokyo Skytree",
+          "category": "landmark",
+          "description": "Tallest structure in Japan with observation decks",
+          "estimated_time": "2-3 hours",
+          "ticket_required": true
+        },
+        {
+          "name": "Tsukiji Outer Market",
+          "category": "food",
+          "description": "Famous fish market with fresh seafood and street food",
+          "estimated_time": "2-3 hours",
+          "ticket_required": false
+        }
+      ],
+      "local_cuisine": [
+        "Sushi and sashimi",
+        "Ramen",
+        "Tempura",
+        "Tonkatsu",
+        "Yakitori"
+      ],
+      "transportation": "Efficient rail system, get JR Pass for tourists",
+      "language": "Japanese",
+      "currency": "JPY"
+    },
+    {
+      "id": "bali",
+      "name": "Bali",
+      "country": "Indonesia",
+      "description": "Tropical paradise known for beaches, rice terraces, and spiritual culture.",
+      "best_time_to_visit": "April-October (dry season)",
+      "average_budget": {
+        "budget": "$50-80/day",
+        "moderate": "$100-200/day",
+        "luxury": "$400+/day"
+      },
+      "top_attractions": [
+        {
+          "name": "Ubud Monkey Forest",
+          "category": "nature",
+          "description": "Sacred forest sanctuary with playful macaques",
+          "estimated_time": "2 hours",
+          "ticket_required": true
+        },
+        {
+          "name": "Tanah Lot Temple",
+          "category": "culture",
+          "description": "Sea temple on a rock formation",
+          "estimated_time": "2 hours",
+          "ticket_required": true
+        },
+        {
+          "name": "Tegallalang Rice Terraces",
+          "category": "nature",
+          "description": "Stunning stepped rice paddies",
+          "estimated_time": "2-3 hours",
+          "ticket_required": false
+        }
+      ],
+      "local_cuisine": [
+        "Nasi goreng",
+        "Satay",
+        "Babi guling",
+        "Lawar",
+        "Pisang goreng"
+      ],
+      "transportation": "Rent scooter or hire private driver",
+      "language": "Indonesian, Balinese",
+      "currency": "IDR"
+    },
+    {
+      "id": "new-york",
+      "name": "New York City",
+      "country": "United States",
+      "description": "The city that never sleeps, offering world-class culture, dining, and entertainment.",
+      "best_time_to_visit": "April-June, September-November",
+      "average_budget": {
+        "budget": "$150-200/day",
+        "moderate": "$300-500/day",
+        "luxury": "$700+/day"
+      },
+      "top_attractions": [
+        {
+          "name": "Statue of Liberty",
+          "category": "landmark",
+          "description": "Iconic symbol of freedom and democracy",
+          "estimated_time": "3-4 hours",
+          "ticket_required": true
+        },
+        {
+          "name": "Central Park",
+          "category": "nature",
+          "description": "Massive urban park in the heart of Manhattan",
+          "estimated_time": "2-4 hours",
+          "ticket_required": false
+        },
+        {
+          "name": "Metropolitan Museum of Art",
+          "category": "culture",
+          "description": "One of the world's finest art museums",
+          "estimated_time": "3-4 hours",
+          "ticket_required": true
+        }
+      ],
+      "local_cuisine": [
+        "New York pizza",
+        "Bagels with lox",
+        "Hot dogs",
+        "Cheesecake",
+        "Pastrami sandwich"
+      ],
+      "transportation": "Subway, buses, taxis, walking",
+      "language": "English",
+      "currency": "USD"
+    }
+  ],
+  "travel_tips": {
+    "general": [
+      "Book accommodations in advance during peak season",
+      "Purchase travel insurance",
+      "Check visa requirements",
+      "Notify your bank of travel plans",
+      "Download offline maps"
+    ],
+    "packing": [
+      "Comfortable walking shoes",
+      "Universal power adapter",
+      "Portable charger",
+      "Copies of important documents",
+      "First-aid kit and medications"
+    ]
+  }
+}
