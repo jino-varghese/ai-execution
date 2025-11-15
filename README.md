@@ -1,51 +1,68 @@
 # AI-Powered Travel Itinerary Generator
 
-A simple yet powerful web application that generates personalized travel itineraries using AI, deployed on AWS with Terraform.
+A sophisticated web application that generates personalized travel itineraries using **Amazon Bedrock LLM** with **RAG** (Retrieval-Augmented Generation), deployed on AWS with Terraform.
 
 ## Overview
 
-This project demonstrates a Tourism and Hospitality AI solution that creates custom travel itineraries based on:
+This project demonstrates a Tourism and Hospitality AI solution powered by **Claude 3 Sonnet** via Amazon Bedrock. It creates highly personalized travel itineraries based on:
 - User preferences (destination, duration, budget)
 - Travel interests (culture, food, adventure, nature, shopping, relaxation)
 - Travel style (solo, couple, family, group)
+- Real-time knowledge retrieval from destination database
 
 ### Key Features
 
-- **Simple Web Interface**: Clean, responsive UI for inputting travel preferences
-- **AI-Powered Generation**: Smart itinerary creation based on destination data and user preferences
-- **Serverless Architecture**: Cost-effective AWS Lambda backend
-- **Static Website Hosting**: Fast S3-based frontend delivery
-- **RESTful API**: API Gateway for seamless frontend-backend communication
-- **Infrastructure as Code**: Complete Terraform deployment scripts
+#### 🤖 AI & LLM Integration
+- **Amazon Bedrock**: Uses Claude 3 Sonnet for natural language generation
+- **RAG System**: Retrieval-Augmented Generation with destination knowledge base
+- **Smart Filtering**: AI agent filters attractions based on user interests
+- **Prompt Engineering**: Advanced prompts simulate fine-tuned behavior
+- **Fallback System**: Template-based generation if Bedrock unavailable
+
+#### 🏗️ Architecture
+- **Serverless**: Cost-effective AWS Lambda backend (no EC2 servers)
+- **Static Hosting**: S3-based frontend delivery (no web server needed)
+- **RESTful API**: API Gateway for seamless communication
+- **Infrastructure as Code**: Complete Terraform deployment
+
+#### 💡 Smart Features
+- **Personalization**: Itineraries tailored to individual preferences
+- **Budget-Aware**: Recommendations match selected budget level
+- **Time-Optimized**: Realistic daily schedules with travel time
+- **Insider Tips**: Local knowledge and best times to visit
+- **Cost Estimates**: Budget breakdowns for planning
 
 ### Technology Stack
 
+- **AI/LLM**: Amazon Bedrock (Claude 3 Sonnet)
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Backend**: Python 3.11 (AWS Lambda)
-- **Infrastructure**: AWS (S3, Lambda, API Gateway, CloudWatch)
-- **IaC**: Terraform
-- **No Docker, No RDS**: Keeping it simple as requested
+- **Infrastructure**: AWS (S3, Lambda, API Gateway, Bedrock, CloudWatch)
+- **IaC**: Terraform 1.0+
+- **No Docker, No RDS**: Simple, serverless architecture
 
 ## Project Structure
 
 ```
 .
-├── frontend/                 # Static website files
-│   ├── index.html           # Main HTML page
+├── frontend/                   # Static website files
+│   ├── index.html             # Main HTML page
 │   ├── css/
-│   │   └── style.css        # Styling
+│   │   └── style.css          # Styling
 │   └── js/
-│       └── app.js           # Frontend logic
-├── backend/                  # Lambda function
-│   ├── lambda_function.py   # Main handler
-│   └── requirements.txt     # Dependencies
-├── terraform/                # Infrastructure as Code
-│   ├── main.tf              # Main resources
-│   ├── variables.tf         # Variables
-│   └── outputs.tf           # Outputs
-├── data/                     # Sample data
-│   └── destinations.json    # Destination database
-└── README.md                # This file
+│       └── app.js             # Frontend logic
+├── backend/                    # Lambda function
+│   ├── lambda_function.py     # AI-powered handler (Bedrock + RAG)
+│   └── requirements.txt       # Dependencies
+├── terraform/                  # Infrastructure as Code
+│   ├── main.tf                # Main resources (includes Bedrock IAM)
+│   ├── variables.tf           # Variables
+│   └── outputs.tf             # Outputs
+├── data/                       # Sample data
+│   └── destinations.json      # Destination database
+├── AI_IMPLEMENTATION.md       # Detailed AI architecture guide
+├── README.md                  # This file
+└── QUICKSTART.md              # Quick deployment guide
 ```
 
 ## Prerequisites
@@ -67,6 +84,23 @@ Before deploying, ensure you have:
    unzip terraform_1.6.0_linux_amd64.zip
    sudo mv terraform /usr/local/bin/
    ```
+
+## 🚨 Important: Enable Amazon Bedrock Access
+
+**Before deployment**, you must enable Bedrock model access:
+
+1. **Go to AWS Console** → Amazon Bedrock
+2. **Navigate to**: Model access (left sidebar)
+3. **Click**: "Request model access" or "Manage model access"
+4. **Select**: Anthropic → Claude 3 Sonnet
+5. **Click**: "Request model access"
+6. **Wait**: Usually approved instantly (sometimes takes a few minutes)
+
+**Supported Regions**: `us-east-1`, `us-west-2`, `eu-central-1`, `ap-southeast-1`, `ap-northeast-1`
+
+> **Note**: If you skip this step, the Lambda function will use the fallback template system instead of AI generation.
+
+For detailed AI implementation info, see [AI_IMPLEMENTATION.md](AI_IMPLEMENTATION.md).
 
 ## Deployment Instructions
 

@@ -1,8 +1,15 @@
-# No external dependencies required for basic implementation
-# Python standard library is sufficient
+# AWS SDK for Python - Already included in Lambda runtime
+# boto3>=1.34.0
+# botocore>=1.34.0
 
-# For future enhancements, you can add:
-# boto3==1.28.0  # AWS SDK (already available in Lambda environment)
-# requests==2.31.0  # For external API calls
-# openai==1.0.0  # For OpenAI GPT integration
-# anthropic==0.8.0  # For Claude AI integration
+# No additional dependencies required!
+# The Lambda function uses:
+# - boto3 (pre-installed in AWS Lambda Python runtime)
+# - json (Python standard library)
+# - datetime (Python standard library)
+# - os (Python standard library)
+
+# Optional: For local testing only
+# boto3==1.34.34
+# anthropic==0.8.0  # If you want to use Anthropic API directly
+# openai==1.0.0     # If you want to use OpenAI instead

@@ -149,6 +149,30 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   role       = aws_iam_role.lambda_role.name
 }
 
+# IAM Policy for Bedrock Access
+resource "aws_iam_role_policy" "lambda_bedrock" {
+  name = "${var.project_name}-lambda-bedrock-policy-${var.environment}"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = [
+          "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
+          "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+          "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-*"
+        ]
+      }
+    ]
+  })
+}
+
 # Lambda Function
 resource "aws_lambda_function" "itinerary_generator" {
   filename         = data.archive_file.lambda_zip.output_path
@@ -157,12 +181,13 @@ resource "aws_lambda_function" "itinerary_generator" {
   handler         = "lambda_function.lambda_handler"
   source_code_hash = data.archive_file.lambda_zip.output_base64sha256
   runtime         = "python3.11"
-  timeout         = 30
-  memory_size     = 256
+  timeout         = 60
+  memory_size     = 512
 
   environment {
     variables = {
       ENVIRONMENT = var.environment
+      AWS_REGION  = var.aws_region
     }
   }
 
