@@ -85,7 +85,16 @@ LegalAgentEvaluator
 
 ## Key Improvements
 
-### 1. Configuration Management
+### 1. Smart Document Loading (NEW!)
+```python
+# Automatic detection and fallback system:
+# 1. Checks for user-uploaded documents first
+# 2. If found → Uses user documents
+# 3. If not found → Automatically creates sample documents
+# 4. Optional Colab upload integration for easy file upload
+```
+
+### 2. Configuration Management
 ```python
 @dataclass
 class LegalAgentConfig:
@@ -96,7 +105,7 @@ class LegalAgentConfig:
     # ... more configurable parameters
 ```
 
-### 2. Enhanced Risk Categories
+### 3. Enhanced Risk Categories
 - Missing Termination Clause (High Severity)
 - Missing Liability Clause (High Severity)
 - Missing Governing Law (Medium Severity)
@@ -106,14 +115,14 @@ class LegalAgentConfig:
 - "As-Is" Warranty Disclaimers (Medium Severity)
 - Unreasonable Restrictions (Medium Severity)
 
-### 3. RAG Integration
+### 4. RAG Integration
 Each identified risk now includes:
 - Relevant text snippets from the document
 - Similar legal documents from the knowledge base
 - Similarity scores for retrieved documents
 - Source metadata for reference
 
-### 4. Comprehensive Evaluation
+### 5. Comprehensive Evaluation
 ```python
 Metrics Tracked:
 - Precision: % of flagged risks that are actual risks
@@ -122,7 +131,7 @@ Metrics Tracked:
 - Per-category breakdown
 ```
 
-### 5. Sample Legal Documents
+### 6. Sample Legal Documents
 System now includes 4 realistic sample documents:
 - Employment Contract
 - Residential Lease Agreement
@@ -147,14 +156,34 @@ System now includes 4 realistic sample documents:
 # Configuration automatically created in cell 4
 ```
 
-### 2. Data Collection
-```python
-# Option A: Use provided samples
-sample_dir = data_collector.create_sample_documents()
+### 2. Data Collection (Smart Loading)
 
-# Option B: Load your own documents
-data_collector.collect_documents("/path/to/your/legal/documents")
+The system now intelligently handles document loading:
+
+**Option A: Upload Your Own Documents (Google Colab)**
+```python
+# Uncomment and run the upload cell
+# This will prompt you to select files from your computer
+# Supported formats: PDF, TXT, MD
 ```
+
+**Option B: Manual Upload**
+```python
+# Place your legal documents in ./legal_data/ directory
+# The system will automatically detect and use them
+```
+
+**Option C: Use Sample Documents (Automatic Fallback)**
+```python
+# If no user documents found, system automatically creates
+# and uses 4 sample legal documents for demonstration
+```
+
+**How it Works:**
+1. System first checks `./legal_data/` for user-uploaded documents
+2. If documents found → Uses your files ✅
+3. If no documents found → Creates sample documents automatically ✅
+4. No manual intervention needed!
 
 ### 3. Fine-Tuning (Optional)
 ```python
@@ -226,6 +255,7 @@ ai-execution/
 - ❌ No documentation
 - ❌ No evaluation
 - ❌ Basic pattern matching
+- ❌ Manual file management
 
 ### After:
 - ✅ Configurable paths
@@ -236,6 +266,7 @@ ai-execution/
 - ✅ Advanced NLP-based detection
 - ✅ Type hints
 - ✅ Modular architecture
+- ✅ Smart document loading (auto-detect user files or use samples)
 
 ## Next Steps for Production
 
