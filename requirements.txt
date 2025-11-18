@@ -1,0 +1,38 @@
+# Core RAG Framework
+langchain==0.1.0
+langchain-community==0.0.13
+langchain-openai==0.0.5
+
+# Vector Database
+chromadb==0.4.22
+faiss-cpu==1.7.4
+
+# Embeddings and NLP
+sentence-transformers==2.3.1
+transformers==4.36.2
+
+# LLM Integration
+openai==1.10.0
+tiktoken==0.5.2
+
+# Document Processing
+pypdf==4.0.0
+python-dotenv==1.0.0
+
+# Data Processing
+pandas==2.1.4
+numpy==1.26.3
+
+# Evaluation
+scikit-learn==1.4.0
+ragas==0.1.1
+
+# Utilities
+tqdm==4.66.1
+requests==2.31.0
+
+# Jupyter
+jupyter==1.0.0
+notebook==7.0.6
+ipykernel==6.28.0
+ipywidgets==8.1.1
